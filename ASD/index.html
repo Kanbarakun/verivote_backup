@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VeriVote | Log In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #cfd9df, #e2ebf0);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-between;
+      padding: 60px;
+    }
+
+    .left {
+      max-width: 40%;
+    }
+
+    .left h1 {
+      font-size: 32px;
+      font-style: italic;
+    }
+
+    .left img {
+      width: 220px;
+      margin: 20px 0;
+    }
+
+    .left p {
+      color: #333;
+      max-width: 320px;
+    }
+
+    .right {
+      width: 360px;
+    }
+
+    .right h2 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 25px;
+      border: none;
+      outline: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 25px;
+      border: none;
+      background: black;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .login-btn:hover {
+      background: #333;
+    }
+
+    .signup {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .signup a {
+      color: red;
+      text-decoration: none;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    footer {
+      background: white;
+      padding: 20px 60px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    footer h4 {
+      margin-bottom: 8px;
+    }
+
+    footer div {
+      max-width: 220px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="left">
+      <h1>VeriVote</h1>
+      <img src="/mnt/data/IMG_4799.jpeg" alt="VeriVote Logo">
+      <p>
+        A Trusted Platform for Digital Political Participation
+      </p>
+    </div>
+
+    <div class="right">
+      <h2>Log In</h2>
+
+      <div class="input-group">
+        <input type="text" id="name" placeholder="Name">
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Password">
+      </div>
+
+      <div class="input-group">
+        <input type="text" id="email" placeholder="Email & Phone Num">
+      </div>
+
+      <button class="login-btn" onclick="login()">Log In</button>
+
+      <div class="error" id="error">Invalid login credentials</div>
+
+      <div class="signup">
+        Don't have an Account? <a href="#">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <strong>VV.net</strong>
+      <p>
+        A Philippine voting site helps Filipinos learn about candidates and take part in elections online.
+      </p>
+    </div>
+
+    <div>
+      <h4>Information</h4>
+      <p>Core features<br>Pro experience<br>Integrations</p>
+    </div>
+
+    <div>
+      <h4>Learn More</h4>
+      <p>Blog<br>Case Study<br>Best Practices</p>
+    </div>
+
+    <div>
+      <h4>Support</h4>
+      <p>Contact<br>Support<br>Legal</p>
+    </div>
+  </footer>
+
+  <script>
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const error = document.getElementById("error");
+
+      // Demo credentials
+      if (email === "admin@verivote.com" && password === "password123") {
+        alert("Login successful!");
+        error.style.display = "none";
+        // window.location.href = "dashboard.html"; // future redirect
+      } else {
+        error.style.display = "block";
+      }
+    }
+  </script>
+
+</body>
+</html>
