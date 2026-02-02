@@ -1,0 +1,38 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  background: #7f95b3;
+  padding: 30px;
+  width: 400px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+h1 {
+  color: white;
+}
+
+.candidate {
+  background: white;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.candidate.selected {
+  border: 3px solid black;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  cursor: pointer;
+}

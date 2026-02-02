@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VeriVote | Voting</title>
+  <link rel="stylesheet" href="css/vote.css">
+</head>
+<body>
+
+  <div class="container">
+    <h1 id="position-title">Vote for PRESIDENT</h1>
+
+    <div id="candidate-list">
+    <!-- Candidate 1 -->
+<div class="candidate-card">
+  <h3>Candidate 1</h3>
+  <button
+    class="vote-btn"
+    data-id="pres1"
+    data-position="president">
+    Vote
+  </button>
+</div>
+
+<!-- Candidate 2 -->
+<div class="candidate-card">
+  <h3>Candidate 2</h3>
+  <button
+    class="vote-btn"
+    data-id="pres2"
+    data-position="president">
+    Vote
+  </button>
+</div>
+    </div>
+    <button id="nextBtn">Next</button>
+  </div>
+  
+  <script src="JS/VOTE.js"></script>
+</body>
+</html>

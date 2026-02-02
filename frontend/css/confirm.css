@@ -1,0 +1,30 @@
+*{
+    -webkit-tap-highlight-color: transparent;
+}
+
+::selection{
+    background: transparent;
+}
+
+body.registration-body {
+    background: linear-gradient(135deg, #c3cfd9 0%, #e2e8f0 100%);
+    font-family: sans-serif;
+}
+
+.form-container {
+    background: rgba(255, 255, 255, 0.4); /* Semi-transparent */
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+input.form-control {
+    border-radius: 15px;
+    border: none;
+    padding: 12px;
+}
+
+label {
+    font-weight: 500;
+    margin-bottom: 5px;
+}

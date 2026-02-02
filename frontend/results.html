@@ -1,0 +1,36 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VeriVote - Election Results</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+        .result-card { background-color: #94a3b8; border-radius: 20px; padding: 40px; }
+        .bar-container { background: white; border-radius: 15px; padding: 20px; min-height: 300px; }
+        .vote-bar { background: #003380; color: white; height: 35px; margin-bottom: 15px; border-radius: 5px; transition: width 1s; display: flex; align-items: center; padding-left: 10px; font-size: 0.8rem; }
+        .candidate-label { font-weight: bold; margin-bottom: 15px; height: 35px; display: flex; align-items: center; }
+    </style>
+</head>
+<body style="background-color: #e5e7eb;">
+    <div class="container py-5 text-center">
+        <h2 id="result-title" class="bg-primary text-white d-inline-block px-5 py-2 rounded-pill mb-4">Result For President</h2>
+        
+        <div class="result-card shadow-lg text-start">
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="bar-container" id="chart-area">
+                        </div>
+                </div>
+                <div class="col-md-5 d-flex flex-column justify-content-start pt-4" id="label-area">
+                    </div>
+            </div>
+            
+            <div class="text-end mt-4">
+                <button id="btn-prev" class="btn btn-link text-white text-decoration-none">Prev</button>
+                <button id="btn-next" class="btn btn-link text-white text-decoration-none">Next</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/results.js"></script>
+</body>
+</html>
