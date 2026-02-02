@@ -1,19 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataDir = path.join(__dirname, '../data');
-
 const fileHandler = {
-    // Reads a JSON file and returns an Array
-    read: (fileName) => {
-        const filePath = path.join(dataDir, fileName);
-        const data = fs.readFileSync(filePath, 'utf-8');
-        return JSON.parse(data || '[]');
+    read: (filename) => {
+        // This ensures it always finds the 'data' folder relative to this file
+        const filePath = path.join(__dirname, '../data', filename);
+        try {
+            if (!fs.existsSync(filePath)) return [];
+            const data = fs.readFileSync(filePath, 'utf8');
+            return JSON.parse(data || '[]');
+        } catch (err) {
+            console.error(`Error reading ${filename}:`, err);
+            return [];
+        }
     },
-    // Writes an Array into a JSON file
-    write: (fileName, data) => {
-        const filePath = path.join(dataDir, fileName);
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    write: (filename, data) => {
+        const filePath = path.join(__dirname, '../data', filename);
+        try {
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+            return true;
+        } catch (err) {
+            console.error(`Error writing ${filename}:`, err);
+            return false;
+        }
     }
 };
 
