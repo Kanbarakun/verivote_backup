@@ -13,20 +13,31 @@ const BINS = {
 
 const fileHandler = {
     read: async (type) => {
+        const binId = BINS[type]; // Get ID from our BINS object
+        
+        if (!binId) {
+            console.error(`Error: Bin ID for "${type}" is missing! Check your .env file.`);
+            return [];
+        }
+
         try {
-            const response = await axios.get(`https://api.jsonbin.io/v3/b/${BINS[type]}/latest`, {
+            const response = await axios.get(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
                 headers: { 'X-Master-Key': API_KEY }
             });
             return response.data.record;
         } catch (err) {
-            console.error(`Cloud Read Error (${type}):`, err.message);
+            // Better error logging
+            console.error(`Cloud Read Error (${type}):`, err.response?.data?.message || err.message);
             return [];
         }
     },
 
     write: async (type, data) => {
+        const binId = BINS[type];
+        if (!binId) return false;
+
         try {
-            await axios.put(`https://api.jsonbin.io/v3/b/${BINS[type]}`, data, {
+            await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Master-Key': API_KEY
@@ -34,7 +45,7 @@ const fileHandler = {
             });
             return true;
         } catch (err) {
-            console.error(`Cloud Write Error (${type}):`, err.message);
+            console.error(`Cloud Write Error (${type}):`, err.response?.data?.message || err.message);
             return false;
         }
     }
