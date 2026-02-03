@@ -1,0 +1,17 @@
+<div class="container mt-5">
+    <h2>Admin Control Panel</h2>
+    <hr>
+    
+    <div class="card p-3 mb-4">
+        <h4>Election Status: <span id="current-status" class="badge bg-secondary">Loading...</span></h4>
+        <button onclick="toggleElection('open')" class="btn btn-success mt-2">Open Election</button>
+        <button onclick="toggleElection('closed')" class="btn btn-danger mt-2">Close Election</button>
+    </div>
+
+    <div class="card p-3">
+        <h4>Add Candidate</h4>
+        <input type="text" id="cand-name" class="form-control mb-2" placeholder="Full Name">
+        <input type="text" id="cand-party" class="form-control mb-2" placeholder="Party Name">
+        <button onclick="addCandidate()" class="btn btn-primary">Add to Ballot</button>
+    </div>
+</div>

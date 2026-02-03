@@ -33,4 +33,28 @@ router.get('/results', async (req, res) => {
 
     res.json({ success: true, results: summary });
 });
+
+rrouter.post('/submit', async (req, res) => {
+    const { voterEmail, candidateId } = req.body;
+
+    const users = await fileHandler.read('users');
+    const votes = await fileHandler.read('votes');
+    
+    // 1. Verify Identity & Check if already voted
+    const user = users.find(u => u.email === voterEmail);
+    if (!user || user.hasVoted) {
+        return res.status(403).json({ success: false, message: "Unauthorized or already voted." });
+    }
+
+    // 2. Cast Vote
+    votes.push({ candidateId, timestamp: new Date() });
+    user.hasVoted = true; // Mark as voted
+
+    // 3. Save both Bins
+    await fileHandler.write('votes', votes);
+    await fileHandler.write('users', users);
+
+    res.json({ success: true });
+});
+
 module.exports = router;
