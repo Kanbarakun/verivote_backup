@@ -20,35 +20,37 @@ async function loadResults() {
     document.getElementById('result-title').innerText = `Result For ${category.charAt(0).toUpperCase() + category.slice(1)}`;
 
     try {
-        // In the future, this fetch comes from your backend /api/vote/results
+        // Fetch real data from your Express backend
         const response = await fetch(`/api/vote/results?category=${category}`);
         const data = await response.json();
 
         const chartArea = document.getElementById('chart-area');
         const labelArea = document.getElementById('label-area');
         
-        chartArea.innerHTML = '';
+        chartArea.innerHTML = ''; // Clear old data
         labelArea.innerHTML = '';
 
         data.results.forEach(item => {
-            // Create the blue bar
+            // Create the name label on the right
+            const label = document.createElement('div');
+            label.className = 'candidate-label';
+            label.innerText = item.name;
+            labelArea.appendChild(label);
+
+            // Create the animated blue bar on the left
             const bar = document.createElement('div');
             bar.className = 'vote-bar';
             bar.style.width = '0%'; // Start at 0 for animation
             bar.innerHTML = `<span>${item.percentage}% &nbsp;&nbsp; ${item.votes} Votes</span>`;
             chartArea.appendChild(bar);
             
-            // Animate to actual percentage
-            setTimeout(() => { bar.style.width = item.percentage + '%'; }, 100);
-
-            // Create the name label
-            const label = document.createElement('div');
-            label.className = 'candidate-label';
-            label.innerText = item.name;
-            labelArea.appendChild(label);
+            // Trigger the animation
+            setTimeout(() => { 
+                bar.style.width = item.percentage + '%'; 
+            }, 100);
         });
     } catch (err) {
-        console.error("Failed to load results:", err);
+        console.error("Failed to load real-time results:", err);
     }
 }
 

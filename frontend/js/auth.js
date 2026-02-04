@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.success) {
                     // Save the user's name so we can use it on the voting page
                     localStorage.setItem('userName', result.user.name);
+                    localStorage.setItem('userEmail', result.user.email);
                     window.location.href = 'dashboard.html';
                 } else {
                     alert(result.message);

@@ -1,161 +1,105 @@
-// STEP 3: Multi-position voting system
-
+// Data structure for the voting process
 const positions = [
-  {
-    title: "PRESIDENT",
-    candidates: [
-      { id: 1, name: "Candidate A" },
-      { id: 2, name: "Candidate B" }
-    ]
-  },
-  {
-    title: "SENATORS",
-    candidates: [
-      { id: 3, name: "Candidate C" },
-      { id: 4, name: "Candidate D" }
-    ]
-  },
-  {
-    title: "MAYOR",
-    candidates: [
-      { id: 5, name: "Candidate E" },
-      { id: 6, name: "Candidate F" }
-    ]
-  }
+    { title: "PRESIDENT", category: "president", candidates: [{ id: "p1", name: "Candidate A" }, { id: "p2", name: "Candidate B" }] },
+    { title: "SENATORS", category: "senators", candidates: [{ id: "s1", name: "Candidate C" }, { id: "s2", name: "Candidate D" }] },
+    { title: "MAYOR", category: "mayor", candidates: [{ id: "m1", name: "Candidate E" }, { id: "m2", name: "Candidate F" }] }
 ];
 
 let currentPositionIndex = 0;
-let selectedVotes = {}; // { PRESIDENT: {...}, SENATORS: {...}, MAYOR: {...} }
-
-const titleEl = document.getElementById("position-title");
-const candidateList = document.getElementById("candidate-list");
-const nextBtn = document.getElementById("nextBtn");
-
+let selectedVotes = {}; // Stores final selections
 let selectedCandidate = null;
 
+// UI Elements
+const titleEl = document.getElementById("position-title"); // Ensure this ID exists in your HTML
+const candidateList = document.getElementById("candidate-list");
+const nextBtn = document.getElementById("btn-submit-vote"); // The button in your Confirm Modal
+
+// 1. Render the current voting category
 function renderPosition() {
-  const position = positions[currentPositionIndex];
-  titleEl.textContent = `Vote for ${position.title}`;
-  candidateList.innerHTML = "";
-  selectedCandidate = null;
+    const position = positions[currentPositionIndex];
+    if (titleEl) titleEl.textContent = `Vote for ${position.title}`;
+    
+    candidateList.innerHTML = "";
+    selectedCandidate = null;
 
-  position.candidates.forEach(candidate => {
-    const div = document.createElement("div");
-    div.classList.add("candidate");
-    div.textContent = candidate.name;
+    position.candidates.forEach(candidate => {
+        const div = document.createElement("div");
+        div.className = "col-md-5 mb-3";
+        div.innerHTML = `
+            <div class="card p-3 shadow-sm candidate-card" style="cursor:pointer; border: 2px solid transparent;">
+                <div class="text-center">
+                    <h5 class="mb-0">${candidate.name}</h5>
+                </div>
+            </div>
+        `;
 
-    div.addEventListener("click", () => {
-      document.querySelectorAll(".candidate").forEach(c => {
-        c.classList.remove("selected");
-      });
+        // Handle candidate selection
+        div.addEventListener("click", () => {
+            document.querySelectorAll(".candidate-card").forEach(c => c.style.borderColor = "transparent");
+            div.querySelector(".card").style.borderColor = "#007bff";
+            selectedCandidate = candidate;
+            
+            // Show confirmation modal
+            const confirmText = document.getElementById("confirm-text");
+            confirmText.innerText = `You are voting for ${candidate.name} as ${position.title}`;
+            const confirmModal = new bootstrap.Modal(document.getElementById('vote-modal'));
+            confirmModal.show();
+        });
 
-      div.classList.add("selected");
-      selectedCandidate = candidate;
+        candidateList.appendChild(div);
     });
-
-    candidateList.appendChild(div);
-  });
 }
 
-nextBtn.addEventListener("click", () => {
-  if (!selectedCandidate) {
-    alert("Please select a candidate first.");
-    return;
-  }
+// 2. Handle the "Submit Ballot" button inside the Confirmation Modal
+nextBtn.addEventListener("click", async () => {
+    if (!selectedCandidate) return;
 
-  const position = positions[currentPositionIndex].title;
-  selectedVotes[position] = selectedCandidate;
+    // Record selection for current position
+    const currentPos = positions[currentPositionIndex];
+    selectedVotes[currentPos.category] = selectedCandidate.id;
 
-  currentPositionIndex++;
+    // Close the confirmation modal
+    const confirmModal = bootstrap.Modal.getInstance(document.getElementById('vote-modal'));
+    confirmModal.hide();
 
-if (currentPositionIndex >= positions.length) {
-  console.log("FINAL VOTES:", votes);
+    // Check if there are more positions to vote for
+    if (currentPositionIndex < positions.length - 1) {
+        currentPositionIndex++;
+        renderPosition();
+    } else {
+        // FINAL STEP: Submit all votes to the backend
+        await submitFinalBallot();  
+    }
+});
 
-  // Save votes temporarily (frontend only)
-  localStorage.setItem("votes", JSON.stringify(votes));
+// 3. Final submission to the Server
+async function submitFinalBallot() {
+    const voterEmail = localStorage.getItem('userEmail');
 
-  // Redirect to confirmation page
-  window.location.href = "confirm.html";
-  return;
+    try {
+        const response = await fetch('/api/vote/submit', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                voterEmail: voterEmail,
+                selections: selectedVotes // Sends {president: "p1", senators: "s1"...}
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // SHOW THE ANIMATED SUCCESS MODAL WE CREATED
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        } else {
+            alert("Voting Error: " + data.message);
+        }
+    } catch (err) {
+        console.error("Submission failed:", err);
+        alert("Server error. Please try again.");
+    }
 }
-
-});
-
-document.querySelectorAll(".vote-btn").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const candidateId = btn.dataset.id;
-    const position = btn.dataset.position;
-
-    const res = await fetch("http://localhost:3000/api/vote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ candidateId, position })
-    });
-
-    const data = await res.json();
-    alert(data.message);
-  });
-});
-
 
 // Initial render
-renderPosition();
-
-document.addEventListener('DOMContentLoaded', () => {
-    const voteButtons = document.querySelectorAll('.btn-outline-primary'); // Assuming this is your button class
-
-    voteButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const candidateName = e.target.innerText;
-            
-            // For now, let's just confirm the choice
-            const confirmed = confirm(`Are you sure you want to vote for ${candidateName}?`);
-            
-            if (confirmed) {
-                try {
-                    const response = await fetch('/api/vote/cast', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: "user123", // We will make this dynamic later
-                            category: "president",
-                            candidateId: candidateName 
-                        })
-                    });
-
-                    const result = await response.json();
-                    if (result.success) {
-                        alert("Thank you for voting!");
-                        window.location.href = 'confirm.html'; // Move to your confirmation screen
-                    }
-                } catch (error) {
-                    console.error("Voting failed:", error);
-                }
-            }
-        });
-    });
-});
-
-// Router to hand vote casting and results.
-router.get('/results', (req, res) => {
-    const category = req.query.category;
-    const votes = fileHandler.read('votes.json'); //
-    
-    // This is a simple count. In a real app, you'd filter by category first.
-    // For now, let's send some "Mock" data so your charts look cool.
-    const mockResults = {
-        president: [
-            { name: "Candidate A", votes: 120, percentage: 98 },
-            { name: "Candidate B", votes: 80, percentage: 78 }
-        ],
-        senators: [
-            { name: "Senator 1", votes: 50, percentage: 45 },
-            { name: "Senator 2", votes: 30, percentage: 25 }
-        ],
-        mayor: [
-            { name: "Mayor 1", votes: 100, percentage: 90 }
-        ]
-    };
-
-    res.json({ results: mockResults[category] || [] });
-});
+document.addEventListener('DOMContentLoaded', renderPosition);

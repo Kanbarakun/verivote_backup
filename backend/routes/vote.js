@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fileHandler = require('../utils/fileHandler');
+const fs = require('fs')
 
 // Record a vote
 router.post('/cast', (req, res) => {
@@ -21,7 +22,7 @@ router.post('/cast', (req, res) => {
     res.json({ success: true, message: "Vote cast successfully!" });
 });
 
-router.get('/results', async (req, res) => {
+router.get('/results', async (req, res) => {    
     const votes = await fileHandler.read('votes');
     const candidates = await fileHandler.read('candidates');
 
@@ -54,7 +55,7 @@ router.post('/submit', async (req, res) => {
     await fileHandler.write('votes', votes);
     await fileHandler.write('users', users);
 
-    res.json({ success: true });
+    res.json({ success: true, message: "Vote submitted successfully!" });
 });
 
 module.exports = router;
