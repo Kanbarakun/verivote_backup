@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => { // Added 'async'
 });
 
 // --- LOGIN ---
-rrouter.post('/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     const { email, password } = req.body; // Ensure this matches what frontend sends
 
     try {
