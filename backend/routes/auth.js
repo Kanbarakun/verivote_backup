@@ -4,23 +4,27 @@ const bcrypt = require('bcryptjs');
 const fileHandler = require('../utils/fileHandler');
 
 // --- REGISTRATION ---
-router.post('/register', async (req, res) => { // Added 'async'
+router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Use 'await' because fileHandler.read() now fetches from the cloud
         const users = await fileHandler.read('users');
 
-        // Check if user already exists
         if (users.find(u => u.email === email)) {
             return res.status(400).json({ success: false, message: "User already exists" });
         }
 
-        // Add new user
-        const newUser = { name, email, password };
+        // ✅ HASH PASSWORD (THE MISSING PART)
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = {
+            name,
+            email,
+            password: hashedPassword
+        };
+
         users.push(newUser);
 
-        // Use 'await' to ensure data is saved to JSONBin before sending response
         const saved = await fileHandler.write('users', users);
 
         if (saved) {
@@ -34,7 +38,8 @@ router.post('/register', async (req, res) => { // Added 'async'
     }
 });
 
-// --- LOGIN ---
+
+
 // --- LOGIN ---
 router.post('/login', async (req, res) => {    
     try {
