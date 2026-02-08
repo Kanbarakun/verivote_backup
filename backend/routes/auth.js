@@ -35,26 +35,33 @@ router.post('/register', async (req, res) => { // Added 'async'
 });
 
 // --- LOGIN ---
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body; // Ensure this matches what frontend sends
-
+// --- LOGIN ---
+router.post('/login', async (req, res) => {    
     try {
-        // 1. Find the user in your database/JSON file
+        const { email, password } = req.body; 
+        
+        // --- ADD THIS LINE (The Missing Piece) ---
+        const users = await fileHandler.read('users');
+
+        // SAFETY CHECK: Ensure users list exists before searching
+        if (!users || !Array.isArray(users)) {
+            console.error("Database error: Could not load user list.");
+            return res.status(500).json({ success: false, message: "Server connection error" });
+        }
+
         const user = users.find(u => u.email === email);
         if (!user) {
             return res.status(401).json({ success: false, message: "User not found" });
         }
 
-        // 2. Check the password
-        // If you used bcrypt to register, you MUST use bcrypt.compare here
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: "Incorrect password" });
         }
 
-        // 3. Successful Login
         res.json({ success: true, userName: user.name, email: user.email });
     } catch (error) {
+        console.error("Login Crash:", error); // Log the error so you can see it in Render logs
         res.status(500).json({ success: false, message: "Server error" });
     }
 });
