@@ -38,8 +38,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-
-
 // --- LOGIN ---
 router.post('/login', async (req, res) => {    
     try {
@@ -64,7 +62,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: "Incorrect password" });
         }
 
-        res.json({ success: true, userName: user.name, email: user.email });
+        res.json({ success: true, userName: user.name, userEmail: user.email });
     } catch (error) {
         console.error("Login Crash:", error); // Log the error so you can see it in Render logs
         res.status(500).json({ success: false, message: "Server error" });
