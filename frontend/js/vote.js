@@ -21,7 +21,15 @@ const candidatesData = {
         { id: "p1", name: "John Doe", photo: "imgs/john.jpg", bio: "Leading with integrity and vision for a better future." },
         { id: "p2", name: "Jane Smith", photo: "imgs/jane.jpg", bio: "Commitment to community growth and sustainable education." }
     ],
-    // Add other categories...
+    senators: [
+        { id: "s1", name: "Alice Johnson", photo: "imgs/alice.jpg", bio: "Advocating for healthcare reform and economic equality." },
+        { id: "s2", name: "Bob Lee", photo: "imgs/bob.jpg", bio: "Focused on job creation and improving public safety." }
+    ],
+    mayor: [
+        { id: "m1", name: "Charlie Brown", photo: "imgs/charlie.jpg", bio: "Dedicated to urban development and environmental sustainability." },
+        { id: "m2", name: "Diana Prince", photo: "imgs/diana.jpg", bio: "Passionate about education and community engagement." }
+    ]
+    
 };
 
 function renderPosition(category) {
@@ -39,6 +47,24 @@ function renderPosition(category) {
         `;
 
         const card = col.querySelector('.candidate-card');
+        // ... inside your renderPosition candidate loop ...
+
+// When the card is clicked
+    card.addEventListener('click', () => {
+        // 1. Highlight the card Green (Selecting the candidate)
+        document.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedCandidate = candidate; // Store the choice
+
+        // 2. Open the Full Manifesto Modal
+        document.getElementById('modal-candidate-name').innerText = `Profile: ${candidate.name}`;
+        document.getElementById('modal-candidate-full-name').innerText = candidate.name;
+        document.getElementById('modal-candidate-photo').src = candidate.photo;
+        document.getElementById('modal-candidate-bio').innerText = candidate.bio; // Your detailed info
+
+        const manifestoModal = new bootstrap.Modal(document.getElementById('manifestoModal'));
+        manifestoModal.show();
+    });
 
         // --- HOVER LOGIC ---
         card.addEventListener('mouseenter', () => {
