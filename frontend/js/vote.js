@@ -15,38 +15,62 @@ const candidateList = document.getElementById("candidate-list");
 const nextBtn = document.getElementById("btn-submit-vote"); // The button in your Confirm Modal
 
 // 1. Render the current voting category
-function renderPosition() {
-    const position = positions[currentPositionIndex];
-    if (titleEl) titleEl.textContent = `Vote for ${position.title}`;
-    
-    candidateList.innerHTML = "";
-    selectedCandidate = null;
+// 1. Your updated data structure
+const candidatesData = {
+    president: [
+        { id: "p1", name: "John Doe", photo: "imgs/john.jpg", bio: "Leading with integrity and vision for a better future." },
+        { id: "p2", name: "Jane Smith", photo: "imgs/jane.jpg", bio: "Commitment to community growth and sustainable education." }
+    ],
+    // Add other categories...
+};
 
-    position.candidates.forEach(candidate => {
-        const div = document.createElement("div");
-        div.className = "col-md-5 mb-3";
-        div.innerHTML = `
-            <div class="card p-3 shadow-sm candidate-card" style="cursor:pointer; border: 2px solid transparent;">
-                <div class="text-center">
-                    <h5 class="mb-0">${candidate.name}</h5>
-                </div>
+function renderPosition(category) {
+    const list = document.getElementById('candidate-list');
+    const hoverCard = document.getElementById('hover-info-card');
+    list.innerHTML = ""; 
+
+    candidatesData[category].forEach(candidate => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `
+            <div class="card p-4 candidate-card text-center" data-id="${candidate.id}">
+                <h5 class="mt-2">${candidate.name}</h5>
             </div>
         `;
 
-        // Handle candidate selection
-        div.addEventListener("click", () => {
-            document.querySelectorAll(".candidate-card").forEach(c => c.style.borderColor = "transparent");
-            div.querySelector(".card").style.borderColor = "#007bff";
-            selectedCandidate = candidate;
-            
-            // Show confirmation modal
-            const confirmText = document.getElementById("confirm-text");
-            confirmText.innerText = `You are voting for ${candidate.name} as ${position.title}`;
-            const confirmModal = new bootstrap.Modal(document.getElementById('vote-modal'));
-            confirmModal.show();
+        const card = col.querySelector('.candidate-card');
+
+        // --- HOVER LOGIC ---
+        card.addEventListener('mouseenter', () => {
+            document.getElementById('hover-photo').src = candidate.photo;
+            document.getElementById('hover-name').innerText = candidate.name;
+            document.getElementById('hover-platform').innerText = candidate.bio;
+            hoverCard.style.display = 'block';
         });
 
-        candidateList.appendChild(div);
+        card.addEventListener('mousemove', (e) => {
+            hoverCard.style.left = (e.pageX + 15) + 'px';
+            hoverCard.style.top = (e.pageY + 15) + 'px';
+        });
+
+        card.addEventListener('mouseleave', () => {
+            hoverCard.style.display = 'none';
+        });
+
+        // --- CLICK (SELECTION) LOGIC ---
+        card.addEventListener('click', () => {
+            // Remove previous green highlight in this category
+            document.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+            
+            // Apply new green highlight
+            card.classList.add('selected');
+            
+            // Save selection (Example)
+            userSelections[category] = candidate.id;
+            console.log(`Selected ${candidate.name} for ${category}`);
+        });
+
+        list.appendChild(col);
     });
 }
 
