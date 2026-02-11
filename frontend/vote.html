@@ -1,51 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriVote | Voting</title>
+    <title>VeriVote | Official Ballot</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/vote.css">
-    
-    <style>
-        /* 2. Success Checkmark Animation CSS */
-        .checkmark { width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 2; stroke: #28a745; margin: 10% auto; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
-        .checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke: #28a745; fill: none; animation: stroke 0.6s forwards; }
-        .checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s 0.8s forwards; }
-        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
-        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
-        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 40px #28a745; } }
-    </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold">Official Ballot</h1>
-        <p class="text-muted">Please select one candidate for the 2026 Election.</p>
+<div class="container-fluid px-lg-5">
+    <div class="text-center mt-4 mb-5">
+        <div class="main-header-pill">CANDIDATES</div>
     </div>
 
-    <div id="candidate-list" class="row justify-content-center">
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2">Loading candidates...</p>
+    <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="vote-column-container">
+                <div class="column-title">PRESIDENT</div>
+                <div id="president-list" class="candidate-slot-wrapper"></div>
+            </div>
         </div>
+
+        <div class="col-md-4">
+            <div class="vote-column-container">
+                <div class="column-title">SENATORS</div>
+                <div id="senators-list" class="candidate-slot-wrapper"></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="vote-column-container">
+                <div class="column-title">MAYOR</div>
+                <div id="mayor-list" class="candidate-slot-wrapper"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5 mb-5">
+        <button id="btn-submit-vote" class="done-voting-btn">DONE VOTING</button>
     </div>
 </div>
 
-<div id="vote-modal" class="modal fade" tabindex="-1">
+<div id="hover-info-card">
+    <img id="hover-photo" src="" class="preview-photo">
+    <div class="p-3">
+        <h6 id="hover-name" class="fw-bold mb-1"></h6>
+        <p id="hover-platform" class="text-muted small mb-0"></p>
+    </div>
+</div>
+
+<div class="modal fade" id="manifestoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Your Selection</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Candidate Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
-                <p id="confirm-text" class="fs-5"></p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="btn-submit-vote" class="btn btn-success px-4">Submit Ballot</button>
+            <div class="modal-body text-center p-4">
+                <img id="modal-candidate-photo" src="" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover;">
+                <h4 id="modal-candidate-full-name" class="fw-bold"></h4>
+                <div class="bg-light p-3 rounded text-start mt-3">
+                    <p id="modal-candidate-bio" class="text-muted mb-0"></p>
+                </div>
+                <button class="btn btn-success w-100 mt-4 py-2 fw-bold" data-bs-dismiss="modal">Confirm Selection</button>
             </div>
         </div>
     </div>
@@ -55,48 +73,15 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-center p-4 shadow-lg" style="border-radius: 20px;">
             <div class="modal-body">
-                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                </svg>
-                <h3 class="fw-bold mt-4">Ballot Submitted!</h3>
-                <p class="text-muted">Your vote has been verified and recorded securely.</p>
-                <button onclick="window.location.href='results.html'" class="btn btn-primary w-100 py-3 mt-3 shadow-sm">
-                    View Election Results
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="candidate-list" class="row justify-content-center g-4"></div>
-
-<div id="hover-info-card">
-    <img id="hover-photo" src="" class="preview-photo">
-    <div class="p-3">
-        <h6 id="hover-name" class="fw-bold mb-1"></h6>
-        <p id="hover-platform" class="text-muted small mb-2"></p>
-        <span class="text-primary small fw-bold">Click to view full manifesto →</span>
-    </div>
-</div>
-
-<div class="modal fade" id="manifestoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modal-candidate-name">Candidate Profile</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-4">
-                <img id="modal-candidate-photo" src="" class="rounded-circle mb-3 shadow" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #f8f9fa;">
-                <h4 id="modal-candidate-full-name" class="fw-bold"></h4>
-                <p class="text-primary fw-bold mb-3">Candidate Platform</p>
-                <div class="text-start bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
-                    <p id="modal-candidate-bio" class="mb-0 text-muted" style="line-height: 1.6;"></p>
+                <div class="checkmark-container mb-4">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <h2 class="fw-bold mb-2">THANK YOU FOR YOUR VOTE</h2>
+                <p class="text-muted mb-4">Your ballot has been recorded securely.</p>
+                <button onclick="window.location.href='results.html'" class="btn btn-primary btn-lg w-100 py-3 fw-bold" style="background-color: #003366; border: none;">RESULT</button>
             </div>
         </div>
     </div>
@@ -104,6 +89,5 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/vote.js"></script>
-
 </body>
 </html>
