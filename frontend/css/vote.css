@@ -1,96 +1,112 @@
+/* --- LAYOUT & GRADIENT --- */
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
     background: linear-gradient(135deg, #748eb8 0%, #ffffff 50%, #d65a64 100%);
     background-attachment: fixed;
     min-height: 100vh;
-    margin: 0;
 }
 
 .main-header-pill {
-    background-color: #cbd5e1;
-    color: #000;
-    padding: 12px 70px;
+    background: #cbd5e1;
+    padding: 10px 60px;
     border-radius: 50px;
     display: inline-block;
     font-weight: 800;
-    font-size: 1.5rem;
-    letter-spacing: 3px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    font-size: 1.8rem;
+    letter-spacing: 2px;
 }
 
 .vote-column-container {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 25px;
-    padding: 30px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 20px;
     min-height: 500px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
 .column-title {
+    font-weight: bold;
     font-style: italic;
-    font-weight: 900;
-    border: 3px solid #000;
-    border-radius: 12px;
-    padding: 8px;
-    margin-bottom: 25px;
+    border: 2px solid #000;
     text-align: center;
+    padding: 5px;
+    margin-bottom: 20px;
     background: white;
 }
 
 .candidate-card {
     border: 2px solid #000 !important;
-    border-radius: 12px !important;
     background: #fff;
-    margin-bottom: 15px;
-    padding: 15px;
+    margin-bottom: 10px;
+    padding: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    font-weight: bold;
+    transition: 0.2s;
 }
 
 .candidate-card.selected {
+    background-color: #e6ffed !important;
     border-color: #28a745 !important;
-    background-color: #f0fff4 !important;
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
-    transform: scale(1.02);
 }
 
 .done-voting-btn {
-    background-color: #fff;
-    color: #000;
+    background: #fff;
     border: none;
-    padding: 18px 60px;
+    padding: 12px 50px;
     border-radius: 50px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-.done-voting-btn:hover {
-    background-color: #f1f5f9;
-    transform: translateY(-3px);
+/* --- POPUP & ANIMATION --- */
+.success-modal-content {
+    background: transparent !important;
+    border: none !important;
+    text-align: center;
 }
 
-/* Hover Info Card Styles */
-#hover-info-card {
-    position: absolute;
-    width: 260px;
+.thank-you-text { color: white; font-weight: 900; font-size: 2.5rem; }
+.recorded-text { color: white; font-size: 1.1rem; margin-bottom: 30px; }
+
+.result-btn {
+    background: #003366;
+    color: white;
+    border: none;
+    padding: 15px 80px;
+    border-radius: 50px;
+    font-weight: bold;
+}
+
+/* THE ANIMATED CHECKMARK */
+.success-checkmark-container {
+    width: 100px; height: 100px;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
-    z-index: 9999;
-    pointer-events: none;
-    display: none;
-    overflow: hidden;
+    border-radius: 50%;
+    margin: 0 auto 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.preview-photo { width: 100%; height: 150px; object-fit: cover; }
+.checkmark-svg {
+    width: 60px; height: 60px;
+    stroke: #003366; /* Concept Blue */
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
 
-/* Success Checkmark Animation */
-.checkmark { width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 3; stroke: #28a745; margin: 0 auto; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
-.checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 3; fill: none; animation: stroke 0.6s forwards; }
-.checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s 0.8s forwards; }
+.checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
 
-@keyframes stroke { 100% { stroke-dashoffset: 0; } }
-@keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
-@keyframes fill { 100% { box-shadow: inset 0px 0px 0px 40px rgba(40, 167, 69, 0.1); } }
+.checkmark-check {
+    stroke-dashoffset: 48;
+    stroke-dasharray: 48;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes stroke {
+    100% { stroke-dashoffset: 0; }
+}
