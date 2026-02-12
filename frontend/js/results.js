@@ -1,3 +1,69 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const userName = localStorage.getItem('userName');
+    
+    if (!userName) {
+        alert("Please log in first!");
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Display the user's name if you have a "Welcome" spot in your UI
+    const welcomeText = document.getElementById('user-welcome');
+    if (welcomeText) welcomeText.innerText = `Welcome, ${userName}`;
+});
+
+let categories = ['president', 'senators', 'mayor'];
+let currentIndex = 0;
+
+async function loadResults() {
+    const category = categories[currentIndex];
+    document.getElementById('result-title').innerText = `Result For ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+
+    try {
+        // Fetch real data from your Express backend
+        const response = await fetch(`/api/vote/results?category=${category}`);
+        const data = await response.json();
+
+        const chartArea = document.getElementById('chart-area');
+        const labelArea = document.getElementById('label-area');
+        
+        chartArea.innerHTML = ''; // Clear old data
+        labelArea.innerHTML = '';
+
+        data.results.forEach(item => {
+            // Create the name label on the right
+            const label = document.createElement('div');
+            label.className = 'candidate-label';
+            label.innerText = item.name;
+            labelArea.appendChild(label);
+
+            // Create the animated blue bar on the left
+            const bar = document.createElement('div');
+            bar.className = 'vote-bar';
+            bar.style.width = '0%'; // Start at 0 for animation
+            bar.innerHTML = `<span>${item.percentage}% &nbsp;&nbsp; ${item.votes} Votes</span>`;
+            chartArea.appendChild(bar);
+            
+            // Trigger the animation
+            setTimeout(() => { 
+                bar.style.width = item.percentage + '%'; 
+            }, 100);
+        });
+    } catch (err) {
+        console.error("Failed to load real-time results:", err);
+    }
+}
+
+document.getElementById('btn-next').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % categories.length;
+    loadResults();
+});
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + categories.length) % categories.length;
+    loadResults();
+});
+
 async function fetchResults() {
     try {
         const response = await fetch('https://verivote-backup.onrender.com/api/vote/results');
@@ -40,3 +106,5 @@ function renderChart(canvasId, label, chartData) {
 }
 
 document.addEventListener('DOMContentLoaded', fetchResults);
+
+loadResults();
