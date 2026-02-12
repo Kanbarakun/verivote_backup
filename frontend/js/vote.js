@@ -48,6 +48,14 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     }
 
     const email = localStorage.getItem('userEmail');
+    
+    // SAFETY CHECK: If no email is found, redirect to login
+    if (!email) {
+        alert("Session expired. Please log in again to vote.");
+        window.location.href = "index.html";
+        return;
+    }
+
     const submitBtn = document.getElementById('btn-submit-vote');
     submitBtn.innerText = "Submitting...";
     submitBtn.disabled = true;
@@ -59,18 +67,21 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
             body: JSON.stringify({ voterEmail: email, selections })
         });
 
-        const data = await res.json();
-        if (data.success) {
-            // TRIGGER THE ANIMATED POPUP
-            const successPopup = new bootstrap.Modal(document.getElementById('successModal'));
-            successPopup.show();
-        } else {
-            alert("Error: " + data.message);
+        // HANDLE 403 UNAUTHORIZED / ALREADY VOTED
+        if (res.status === 403) {
+            alert("This email has already cast a ballot. You cannot vote twice!");
             submitBtn.innerText = "DONE VOTING";
             submitBtn.disabled = false;
+            return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
+            const successPopup = new bootstrap.Modal(document.getElementById('successModal'));
+            successPopup.show();
         }
     } catch (e) {
-        alert("Server error. Check your connection.");
+        alert("Server error. Please check your connection.");
         submitBtn.innerText = "DONE VOTING";
         submitBtn.disabled = false;
     }
