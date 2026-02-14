@@ -1,4 +1,4 @@
-const express = require ('express');
+const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const fileHandler = require('../utils/fileHandler');
@@ -7,24 +7,29 @@ const fileHandler = require('../utils/fileHandler');
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
+        
+        // 1. Read existing users
+        const users = await fileHandler.read('users') || []; // Fallback to empty array if null
 
-        const users = await fileHandler.read('users');
-
+        // 2. Check duplicates
         if (users.find(u => u.email === email)) {
             return res.status(400).json({ success: false, message: "User already exists" });
         }
 
-        // ✅ HASH PASSWORD (THE MISSING PART)
+        // 3. Hash Password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // 4. Create User Object (Explicitly add hasVoted: false)
         const newUser = {
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            hasVoted: false  // <--- CRITICAL FIX
         };
 
         users.push(newUser);
 
+        // 5. Save to JSONBin
         const saved = await fileHandler.write('users', users);
 
         if (saved) {
@@ -42,13 +47,9 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {    
     try {
         const { email, password } = req.body; 
-        
-        // --- ADD THIS LINE (The Missing Piece) ---
         const users = await fileHandler.read('users');
 
-        // SAFETY CHECK: Ensure users list exists before searching
         if (!users || !Array.isArray(users)) {
-            console.error("Database error: Could not load user list.");
             return res.status(500).json({ success: false, message: "Server connection error" });
         }
 
@@ -64,7 +65,7 @@ router.post('/login', async (req, res) => {
 
         res.json({ success: true, userName: user.name, userEmail: user.email });
     } catch (error) {
-        console.error("Login Crash:", error); // Log the error so you can see it in Render logs
+        console.error("Login Crash:", error);
         res.status(500).json({ success: false, message: "Server error" });
     }
 });

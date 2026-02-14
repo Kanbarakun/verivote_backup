@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const candidateId = params.get('id');
 
-    // 2. In a real cloud app, you'd fetch this from your API
-    // For now, we'll simulate the data based on your design
     const mockData = {
         "p1": {
             name: "Juan Dela Cruz",

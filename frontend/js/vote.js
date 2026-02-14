@@ -15,6 +15,28 @@ const candidatesData = {
 
 let selections = { president: null, senators: null, mayor: null };
 
+// NEW: Check if user is allowed to be here
+async function checkStatus() {
+    const email = localStorage.getItem('userEmail');
+    if (!email) {
+        alert("Please log in first.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://verivote-backup.onrender.com/api/vote/status?email=${email}`);
+        const data = await res.json();
+
+        if (data.hasVoted) {
+            alert("You have already voted in this election. Redirecting to results.");
+            window.location.href = "results.html";
+        }
+    } catch (error) {
+        console.log("Could not verify status, proceeding...", error);
+    }
+}
+
 function renderColumns() {
     ['president', 'senators', 'mayor'].forEach(category => {
         const container = document.getElementById(`${category}-list`);
@@ -48,14 +70,6 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     }
 
     const email = localStorage.getItem('userEmail');
-    
-    // SAFETY CHECK: If no email is found, redirect to login
-    if (!email) {
-        alert("Session expired. Please log in again to vote.");
-        window.location.href = "index.html";
-        return;
-    }
-
     const submitBtn = document.getElementById('btn-submit-vote');
     submitBtn.innerText = "Submitting...";
     submitBtn.disabled = true;
@@ -67,7 +81,6 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
             body: JSON.stringify({ voterEmail: email, selections })
         });
 
-        // HANDLE 403 UNAUTHORIZED / ALREADY VOTED
         if (res.status === 403) {
             alert("This email has already cast a ballot. You cannot vote twice!");
             submitBtn.innerText = "DONE VOTING";
@@ -87,4 +100,7 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     }
 });
 
-document.addEventListener('DOMContentLoaded', renderColumns);
+document.addEventListener('DOMContentLoaded', () => {
+    checkStatus(); // Run check immediately
+    renderColumns();
+});
