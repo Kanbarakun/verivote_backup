@@ -34,9 +34,12 @@ async function checkStatus() {
     try {
         // We use API_URL here so it goes to the right server
         const res = await fetch(`${API_URL}/api/vote/status?email=${email}`);
-        
         if (!res.ok) {
-            // If the server is sleeping or broken, don't crash, just log it
+            const data = await res.json();
+            if (data.hasVoted){
+                alert("You have already voted.");
+                window.location.href = "results.html";
+            }
             console.warn("Server status check failed, allowing user to proceed.");
             return;
         }
