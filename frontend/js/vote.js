@@ -1,3 +1,10 @@
+// 1. SMART URL HANDLER
+// If you are on localhost (testing), it uses your local backend.
+// If you are on the internet (Render/GitHub), it uses the Render backend.
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000' 
+    : 'https://verivote-backup.onrender.com';
+
 const candidatesData = {
     president: [
         { id: "p1", name: "John Doe", photo: "imgs/john.jpg", bio: "Leading with vision." },
@@ -15,7 +22,7 @@ const candidatesData = {
 
 let selections = { president: null, senators: null, mayor: null };
 
-// NEW: Check if user is allowed to be here
+// 2. CHECK STATUS (Fixed to use API_URL)
 async function checkStatus() {
     const email = localStorage.getItem('userEmail');
     if (!email) {
@@ -25,18 +32,27 @@ async function checkStatus() {
     }
 
     try {
-        const res = await fetch(`/api/vote/status?email=${email}`);
+        // We use API_URL here so it goes to the right server
+        const res = await fetch(`${API_URL}/api/vote/status?email=${email}`);
+        
+        if (!res.ok) {
+            // If the server is sleeping or broken, don't crash, just log it
+            console.warn("Server status check failed, allowing user to proceed.");
+            return;
+        }
+
         const data = await res.json();
 
         if (data.hasVoted) {
-            alert("You have already voted in this election. Redirecting to results.");
+            alert("You have already voted. Redirecting to results.");
             window.location.href = "results.html";
         }
     } catch (error) {
-        console.log("Could not verify status, proceeding...", error);
+        console.log("Could not verify status (Server might be sleeping), proceeding...", error);
     }
 }
 
+// 3. RENDER COLUMNS (No changes needed here)
 function renderColumns() {
     ['president', 'senators', 'mayor'].forEach(category => {
         const container = document.getElementById(`${category}-list`);
@@ -52,18 +68,26 @@ function renderColumns() {
                 card.classList.add('selected');
                 selections[category] = candidate.id;
                 
-                // Show info modal
-                document.getElementById('modal-photo').src = candidate.photo;
+                // Update Modal Info
+                const photoEl = document.getElementById('modal-photo');
+                if(photoEl) photoEl.src = candidate.photo;
+                
                 document.getElementById('modal-name').innerText = candidate.name;
                 document.getElementById('modal-bio').innerText = candidate.bio;
-                new bootstrap.Modal(document.getElementById('manifestoModal')).show();
+                
+                const modalEl = document.getElementById('manifestoModal');
+                if(modalEl) {
+                    new bootstrap.Modal(modalEl).show();
+                }
             });
             container.appendChild(card);
         });
     });
 }
 
+// 4. SUBMIT VOTE (Fixed to use API_URL)
 document.getElementById('btn-submit-vote').addEventListener('click', async () => {
+    // Validate selections
     if (!selections.president || !selections.senators || !selections.mayor) {
         alert("Please pick one candidate in every column!");
         return;
@@ -71,40 +95,61 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
 
     const email = localStorage.getItem('userEmail');
     const submitBtn = document.getElementById('btn-submit-vote');
+    
+    // Disable button to prevent double clicks
     submitBtn.innerText = "Submitting...";
     submitBtn.disabled = true;
 
     try {
-        const res = await fetch('/api/vote/submit', {
+        // USE API_URL HERE TO FIX 404
+        const res = await fetch(`${API_URL}/api/vote/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ voterEmail: email, selections })
         });
 
+        // Handle specific server errors
+        if (res.status === 404) {
+             throw new Error("Server route not found. Backend might need an update.");
+        }
         if (res.status === 403) {
             alert("This email has already cast a ballot. You cannot vote twice!");
             submitBtn.innerText = "DONE VOTING";
-            submitBtn.disabled = false;
+            // Don't re-enable button if they already voted
             return;
         }
 
         const data = await res.json();
+        
         if (data.success) {
-            const successPopup = new bootstrap.Modal(document.getElementById('successModal'));
-            successPopup.show();
+            // Show Success Modal
+            const modalEl = document.getElementById('successModal');
+            if(modalEl) {
+                const successPopup = new bootstrap.Modal(modalEl);
+                successPopup.show();
+            } else {
+                alert("Vote Submitted Successfully!");
+            }
 
+            // Redirect after 1.5 seconds
             setTimeout(() => {
-                window.location.href = "confirm.html";
-            }, 1500); //1.5 secon delay
+                // Ensure confirm.html exists, otherwise change to results.html
+                window.location.href = "results.html"; 
+            }, 1500);
+        } else {
+            throw new Error(data.message || "Unknown error");
         }
+
     } catch (e) {
-        alert("Server error. Please check your connection.");
-        submitBtn.innerText = "DONE VOTING";
-        submitBtn.disabled = false;
+        console.error(e);
+        alert("Submission failed: " + e.message);
+        submitBtn.innerText = "SUBMIT VOTE"; // Reset text
+        submitBtn.disabled = false; // Allow retry
     }
 });
 
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    checkStatus(); // Run check immediately
+    checkStatus();
     renderColumns();
 });
