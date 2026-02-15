@@ -9,7 +9,7 @@ app.use(cors());
 const authRoutes = require("./routes/auth");
 const electionRoutes = require("./routes/election");
 const adminRoutes = require("./routes/admin");
-const voteRouter = require("./backend/routes/vote");
+const voteRouter = require("./routes/vote");
 
 app.use((req, res, next) => {
     console.log(`${req.method} request received at: ${req.url}`);
