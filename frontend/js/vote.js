@@ -25,7 +25,7 @@ async function checkStatus() {
     }
 
     try {
-        const res = await fetch(`https://verivote-backup.onrender.com/api/vote/status?email=${email}`);
+        const res = await fetch(`/api/vote/status?email=${email}`);
         const data = await res.json();
 
         if (data.hasVoted) {
@@ -75,7 +75,7 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     submitBtn.disabled = true;
 
     try {
-        const res = await fetch('https://verivote-backup.onrender.com/api/vote/submit', {
+        const res = await fetch('/api/vote/submit', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ voterEmail: email, selections })
@@ -94,7 +94,7 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
             successPopup.show();
 
             setTimeout(() => {
-                window.location.href = "results.html";
+                window.location.href = "confirm.html";
             }, 1500); //1.5 secon delay
         }
     } catch (e) {
