@@ -7,6 +7,7 @@ require("dotenv").config();
 const authRoutes = require("./routes/auth");
 const electionRoutes = require("./routes/election");
 const adminRoutes = require("./routes/admin");
+const voteRoutes = require("./routes/vote");
 
 
 app.use(cors());
