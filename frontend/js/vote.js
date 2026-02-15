@@ -92,6 +92,10 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
         if (data.success) {
             const successPopup = new bootstrap.Modal(document.getElementById('successModal'));
             successPopup.show();
+
+            setTimeout(() => {
+                window.location.href = "results.html";
+            }, 1500); //1.5 secon delay
         }
     } catch (e) {
         alert("Server error. Please check your connection.");

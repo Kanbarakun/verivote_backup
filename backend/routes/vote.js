@@ -16,41 +16,44 @@ router.get('/status', async (req, res) => {
 
 // SUBMIT VOTE: Handles the full ballot
 router.post('/submit', async (req, res) => {
-    const { voterEmail, selections } = req.body; // Expect 'selections', not 'candidateId'
+    try {
+        const { voterEmail, selections } = req.body;
 
-    const users = await fileHandler.read('users') || [];
-    const votes = await fileHandler.read('votes') || [];
-    
-    // 1. Verify Identity & Check if already voted
-    const userIndex = users.findIndex(u => u.email === voterEmail);
-    
-    if (userIndex === -1) {
-        return res.status(404).json({ success: false, message: "User not found." });
+        const users = await fileHandler.read('users') || [];
+        const votes = await fileHandler.read('votes') || [];
+
+        const userIndex = users.findIndex(u => u.email === voterEmail);
+
+        if (userIndex === -1) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        if (users[userIndex].hasVoted) {
+            return res.status(403).json({ success: false, message: "Already voted." });
+        }
+
+        const newVote = {
+            voterEmail,
+            selections,
+            timestamp: new Date().toISOString()
+        };
+
+        votes.push(newVote);
+        users[userIndex].hasVoted = true;
+
+        await Promise.all([
+            fileHandler.write('votes', votes),
+            fileHandler.write('users', users)
+        ]);
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("Vote submission crash:", err);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-
-    if (users[userIndex].hasVoted) {
-        return res.status(403).json({ success: false, message: "Unauthorized or already voted." });
-    }   
-
-    // 2. Cast Vote (Record all 3 selections)
-    const newVote = {
-        voterEmail, // Optional: keep anonymous if you prefer
-        selections, // { president: "p1", senators: "s1", mayor: "m1" }
-        timestamp: new Date().toISOString()
-    };
-    votes.push(newVote);
-
-    // 3. Mark User as Voted
-    users[userIndex].hasVoted = true;
-
-    // 4. Save both Bins (Wait for both to finish)
-    await Promise.all([
-        fileHandler.write('votes', votes),
-        fileHandler.write('users', users)
-    ]);
-
-    res.json({ success: true, message: "Vote submitted successfully!" });
 });
+
 
 // GET RESULTS
 router.get('/results', async (req, res) => {    
