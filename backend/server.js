@@ -4,10 +4,12 @@ const cors = require("cors");
 const app = express();
 require("dotenv").config();
 
+app.use(cors());
+
 const authRoutes = require("./routes/auth");
 const electionRoutes = require("./routes/election");
 const adminRoutes = require("./routes/admin");
-const voteRoutes = require("./routes/vote");
+const voteRouter = require("./backend/routes/vote");
 
 app.use((req, res, next) => {
     console.log(`${req.method} request received at: ${req.url}`);
@@ -16,7 +18,7 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/vote", voteRoutes);
+app.use('/api/vote', voteRouter);
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/admin", adminRoutes);
