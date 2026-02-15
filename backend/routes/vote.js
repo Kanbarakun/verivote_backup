@@ -18,12 +18,10 @@ router.get('/status', async (req, res) => {
 router.post('/submit', async (req, res) => {
     try {
         const { voterEmail, selections } = req.body;
-
         const users = await fileHandler.read('users') || [];
         const votes = await fileHandler.read('votes') || [];
 
         const userIndex = users.findIndex(u => u.email === voterEmail);
-
         if (userIndex === -1) {
             return res.status(404).json({ success: false, message: "User not found." });
         }
@@ -32,13 +30,11 @@ router.post('/submit', async (req, res) => {
             return res.status(403).json({ success: false, message: "Already voted." });
         }
 
-        const newVote = {
+        votes.push({
             voterEmail,
             selections,
             timestamp: new Date().toISOString()
-        };
-
-        votes.push(newVote);
+        });
         users[userIndex].hasVoted = true;
 
         await Promise.all([
@@ -47,12 +43,12 @@ router.post('/submit', async (req, res) => {
         ]);
 
         res.json({ success: true });
-
     } catch (err) {
         console.error("Vote submission crash:", err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 });
+
 
 
 // GET RESULTS

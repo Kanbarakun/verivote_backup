@@ -12,7 +12,7 @@ const adminRoutes = require("./routes/admin");
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/vote", require("./routes/vote"));
+app.use("/api/vote", voteRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/admin", adminRoutes);
