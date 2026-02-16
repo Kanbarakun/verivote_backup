@@ -4,16 +4,31 @@
 const API_URL = (function() {
     // If deployed on Render
     if (window.location.hostname.includes('onrender.com')) {
-        // The backend is at the same domain but different service
-        // Since your frontend and backend are separate services on Render
         return 'https://verivote-backup.onrender.com';
     }
-    
     // Fallback 
     return '';
 })();
 
 console.log('Using API URL:', API_URL);
+
+// Candidate data - this is what populates the columns
+const candidatesData = {
+    president: [
+        { id: "p1", name: "John Doe", photo: "imgs/john.jpg", bio: "Leading with vision." },
+        { id: "p2", name: "Jane Smith", photo: "imgs/jane.jpg", bio: "Focus on growth." }
+    ],
+    senators: [
+        { id: "s1", name: "Alice Johnson", photo: "imgs/alice.jpg", bio: "Economic reform." },
+        { id: "s2", name: "Bob Lee", photo: "imgs/bob.jpg", bio: "Public safety." }
+    ],
+    mayor: [
+        { id: "m1", name: "Charlie Brown", photo: "imgs/charlie.jpg", bio: "Urban transit." },
+        { id: "m2", name: "Diana Prince", photo: "imgs/diana.jpg", bio: "Community focused." }
+    ]
+};
+
+let selections = { president: null, senators: null, mayor: null };
 
 // Test the API connection on page load
 async function testAPIConnection() {
@@ -30,7 +45,7 @@ async function testAPIConnection() {
     }
 }
 
-// Modified checkStatus with better error handling
+// Check if user has already voted
 async function checkStatus() {
     const email = localStorage.getItem('userEmail');
     if (!email) {
@@ -39,35 +54,68 @@ async function checkStatus() {
         return;
     }
 
-try {
-  const res = await fetch(`${API_URL}/api/vote/submit`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ voterEmail: email, selections }),
-  });
+    try {
+        const res = await fetch(`${API_URL}/api/vote/status?email=${encodeURIComponent(email)}`);
+        
+        if (!res.ok) {
+            console.warn("Status check failed, allowing user to proceed");
+            return;
+        }
 
-  // Check if the response is OK (status in the range 200-299)
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
-  }
+        const data = await res.json();
+        console.log("Status check:", data);
 
-  // Parse JSON safely
-  const data = await res.json();
-  console.log("Success:", data);
-  return data;
+        if (data.hasVoted) {
+            alert("You have already voted. Redirecting to results.");
+            window.location.href = "results.html";
+        }
+    } catch (error) {
+        console.log("Could not verify status:", error.message);
+    }
+}
 
-} catch (error) {
-  if (error.name === "TypeError") {
-    console.error("Network error or CORS issue:", error.message);
-    // Likely causes: incorrect URL, server down, CORS misconfiguration
-  } else {
-    console.error("Request failed:", error.message);
-  }
-}   
+// Render candidate columns
+function renderColumns() {
+    ['president', 'senators', 'mayor'].forEach(category => {
+        const container = document.getElementById(`${category}-list`);
+        if (!container) {
+            console.error(`Container for ${category} not found`);
+            return;
+        }
+        
+        container.innerHTML = "";
+        
+        candidatesData[category].forEach(candidate => {
+            const card = document.createElement('div');
+            card.className = 'candidate-card';
+            card.innerText = candidate.name;
+            card.dataset.id = candidate.id;
+            card.dataset.category = category;
 
-// Modified submit function with better error handling
+            card.addEventListener('click', () => {
+                // Remove selected class from all cards in this category
+                container.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selections[category] = candidate.id;
+                
+                // Update Modal Info
+                const photoEl = document.getElementById('modal-photo');
+                if(photoEl) photoEl.src = candidate.photo;
+                
+                document.getElementById('modal-name').innerText = candidate.name;
+                document.getElementById('modal-bio').innerText = candidate.bio;
+                
+                const modalEl = document.getElementById('manifestoModal');
+                if(modalEl) {
+                    new bootstrap.Modal(modalEl).show();
+                }
+            });
+            container.appendChild(card);
+        });
+    });
+}
+
+// Submit vote function
 document.getElementById('btn-submit-vote').addEventListener('click', async () => {
     if (!selections.president || !selections.senators || !selections.mayor) {
         alert("Please pick one candidate in every column!");
@@ -75,6 +123,12 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     }
 
     const email = localStorage.getItem('userEmail');
+    if (!email) {
+        alert("No user email found. Please log in again.");
+        window.location.href = "index.html";
+        return;
+    }
+
     const submitBtn = document.getElementById('btn-submit-vote');
     
     submitBtn.innerText = "Submitting...";
@@ -82,6 +136,7 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
 
     try {
         console.log('Submitting vote to:', `${API_URL}/api/vote/submit`);
+        console.log('Selections:', selections);
         
         const res = await fetch(`${API_URL}/api/vote/submit`, {
             method: "POST",
@@ -148,10 +203,13 @@ function showSuccess() {
     }, 1500);
 }
 
-// Initialize
+// Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    testAPIConnection(); // Test API on load
+    console.log('Vote page loaded');
+    testAPIConnection();
     checkStatus();
     renderColumns();
+    
+    // Log the selections object to verify it's working
+    console.log('Selections object initialized:', selections);
 });
-}

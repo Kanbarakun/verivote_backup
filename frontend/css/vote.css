@@ -1,8 +1,11 @@
+/* frontend/css/vote.css */
+
 /* --- LAYOUT & GRADIENT --- */
 body {
     background: linear-gradient(135deg, #748eb8 0%, #ffffff 50%, #d65a64 100%);
     background-attachment: fixed;
     min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
 .main-header-pill {
@@ -13,14 +16,16 @@ body {
     font-weight: 800;
     font-size: 1.8rem;
     letter-spacing: 2px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .vote-column-container {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 20px;
     min-height: 500px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    backdrop-filter: blur(5px);
 }
 
 .column-title {
@@ -28,33 +33,62 @@ body {
     font-style: italic;
     border: 2px solid #000;
     text-align: center;
-    padding: 5px;
+    padding: 10px;
     margin-bottom: 20px;
     background: white;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
 }
 
 .candidate-card {
     border: 2px solid #000 !important;
     background: #fff;
-    margin-bottom: 10px;
-    padding: 12px;
+    margin-bottom: 12px;
+    padding: 15px 12px;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.candidate-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
 }
 
 .candidate-card.selected {
     background-color: #e6ffed !important;
     border-color: #28a745 !important;
+    border-width: 3px !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
 }
 
 .done-voting-btn {
     background: #fff;
     border: none;
-    padding: 12px 50px;
+    padding: 15px 60px;
     border-radius: 50px;
     font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.done-voting-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    background-color: #f8f9fa;
+}
+
+.done-voting-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* --- POPUP & ANIMATION --- */
@@ -64,32 +98,59 @@ body {
     text-align: center;
 }
 
-.thank-you-text { color: white; font-weight: 900; font-size: 2.5rem; }
-.recorded-text { color: white; font-size: 1.1rem; margin-bottom: 30px; }
+.success-modal-content .modal-body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.thank-you-text { 
+    color: white; 
+    font-weight: 900; 
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.recorded-text { 
+    color: rgba(255,255,255,0.9); 
+    font-size: 1.1rem; 
+    margin-bottom: 30px;
+}
 
 .result-btn {
-    background: #003366;
-    color: white;
+    background: white;
+    color: #333;
     border: none;
     padding: 15px 80px;
     border-radius: 50px;
     font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.result-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    background-color: #f8f9fa;
 }
 
 /* THE ANIMATED CHECKMARK */
 .success-checkmark-container {
-    width: 100px; height: 100px;
+    width: 100px;
+    height: 100px;
     background: white;
     border-radius: 50%;
     margin: 0 auto 30px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
 .checkmark-svg {
-    width: 60px; height: 60px;
-    stroke: #003366; /* Concept Blue */
+    width: 60px;
+    height: 60px;
+    stroke: #667eea;
     stroke-width: 5;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -109,4 +170,42 @@ body {
 
 @keyframes stroke {
     100% { stroke-dashoffset: 0; }
+}
+
+/* Info Modal Styles */
+.info-modal {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.info-modal .modal-body {
+    padding: 30px;
+}
+
+.info-modal img {
+    border: 3px solid #667eea;
+    padding: 3px;
+}
+
+.info-modal h4 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.info-modal p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.info-modal .btn-dark {
+    background: #667eea;
+    border: none;
+    padding: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.info-modal .btn-dark:hover {
+    background: #764ba2;
+    transform: scale(1.02);
 }
