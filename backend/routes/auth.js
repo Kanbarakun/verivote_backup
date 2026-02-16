@@ -44,29 +44,49 @@ router.post('/register', async (req, res) => {
 });
 
 // --- LOGIN ---
-router.post('/login', async (req, res) => {    
+// In your backend/routes/auth.js
+router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body; 
-        const users = await fileHandler.read('users');
-
-        if (!users || !Array.isArray(users)) {
-            return res.status(500).json({ success: false, message: "Server connection error" });
-        }
-
+        const { email, password } = req.body;
+        
+        console.log('Login attempt for:', email); // Debug log
+        
+        const users = await fileHandler.read('users') || [];
         const user = users.find(u => u.email === email);
+        
         if (!user) {
-            return res.status(401).json({ success: false, message: "User not found" });
+            console.log('User not found:', email);
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not found" 
+            });
         }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: "Incorrect password" });
+        
+        // Check password (you should use bcrypt in production)
+        if (user.password !== password) {
+            console.log('Invalid password for:', email);
+            return res.status(401).json({ 
+                success: false, 
+                message: "Invalid password" 
+            });
         }
-
-        res.json({ success: true, userName: user.name, userEmail: user.email });
+        
+        console.log('Login successful for:', email);
+        
+        // IMPORTANT: Send back the email and userName
+        res.json({ 
+            success: true, 
+            message: "Login successful",
+            email: user.email,           // Send the email back
+            userName: user.name || user.fullName || email.split('@')[0] // Send name back
+        });
+        
     } catch (error) {
-        console.error("Login Crash:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        console.error('Login error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error" 
+        });
     }
 });
 

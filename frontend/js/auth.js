@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
+                console.log('Attempting login for:', email); // Debug log
+                
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -56,18 +58,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 const result = await response.json();
+                console.log('Login response:', result); // Debug log
+                
                 if (result.success) {
-                    // Save the user's name so we can use it on the voting page
-                    localStorage.setItem('userName', result.userName);
-                    localStorage.setItem('userEmail', result.email);
+                    // Save both email and name to localStorage
+                    // Use the email from the form if the backend doesn't return it
+                    const userEmail = result.email || email; // Fallback to form email
+                    const userName = result.userName || name || email.split('@')[0];
+                    
+                    localStorage.setItem('userEmail', userEmail);
+                    localStorage.setItem('userName', userName);
+                    
+                    console.log('Saved to localStorage:', { 
+                        userEmail, 
+                        userName 
+                    }); // Debug log
+                    
+                    // Verify it was saved
+                    console.log('localStorage after save:', {
+                        email: localStorage.getItem('userEmail'),
+                        name: localStorage.getItem('userName')
+                    });
 
                     window.location.href = 'dashboard.html';
                 } else {
-                    alert(result.message);
+                    alert(result.message || "Login failed");
                 }
             } catch (error) {
                 console.error("Login failed:", error);
+                alert("Login failed. Please try again.");
             }
+        });
+    }
+    
+    // Optional: Add a logout function
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userName');
+            window.location.href = 'index.html';
         });
     }
 });
