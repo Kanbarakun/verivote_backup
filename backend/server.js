@@ -18,6 +18,49 @@ app.get('/api/test', (req, res) => {
     res.json({ message: "API is working" });
 });
 
+// Add debug endpoint to see users
+app.get('/api/debug/users', async (req, res) => {
+    try {
+        const fileHandler = require('./utils/fileHandler');
+        const users = await fileHandler.read('users') || [];
+        const votes = await fileHandler.read('votes') || [];
+        
+        res.json({
+            users: users.map(u => ({ email: u.email, hasVoted: u.hasVoted })),
+            totalVotes: votes.length,
+            userCount: users.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// TEMPORARY: Add a test user (REMOVE AFTER TESTING)
+app.get('/api/debug/add-test-user', async (req, res) => {
+    try {
+        const fileHandler = require('./utils/fileHandler');
+        const users = await fileHandler.read('users') || [];
+        
+        // Add a test user if not exists
+        const testEmail = 'test@example.com';
+        if (!users.find(u => u.email === testEmail)) {
+            users.push({
+                email: testEmail,
+                password: 'password123',
+                fullName: 'Test User',
+                hasVoted: false,
+                registeredAt: new Date().toISOString()
+            });
+            await fileHandler.write('users', users);
+            res.json({ success: true, message: 'Test user added', users: users.map(u => u.email) });
+        } else {
+            res.json({ success: true, message: 'Test user already exists', users: users.map(u => u.email) });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Mount routes
 const authRoutes = require("./routes/auth");
 const electionRoutes = require("./routes/election");
@@ -29,13 +72,18 @@ app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Serve static files
+// Serve static files from the frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Catch-all route for SPA (if needed)
-app.get("*", (req, res) => {
+// For any other routes, serve index.html (but only for non-API routes)
+// FIXED: Changed from '*' to a more specific catch-all
+app.use((req, res) => {
+    // Only serve index.html for non-API routes
     if (!req.path.startsWith('/api')) {
         res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    } else {
+        // If it's an API route that wasn't found, return 404
+        res.status(404).json({ error: 'API endpoint not found' });
     }
 });
 
