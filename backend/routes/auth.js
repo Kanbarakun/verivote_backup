@@ -8,23 +8,27 @@ router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
         
+        console.log('Registration attempt:', { name, email }); // Debug log
+        
         // 1. Read existing users
-        const users = await fileHandler.read('users') || []; // Fallback to empty array if null
+        const users = await fileHandler.read('users') || [];
 
-        // 2. Check duplicates
-        if (users.find(u => u.email === email)) {
+        // 2. Check duplicates (case-insensitive email)
+        const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (existingUser) {
             return res.status(400).json({ success: false, message: "User already exists" });
         }
 
         // 3. Hash Password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 4. Create User Object (Explicitly add hasVoted: false)
+        // 4. Create User Object (store email in lowercase to avoid case issues)
         const newUser = {
             name,
-            email,
+            email: email.toLowerCase(), // Store email in lowercase
             password: hashedPassword,
-            hasVoted: false  // <--- CRITICAL FIX
+            hasVoted: false,
+            registeredAt: new Date().toISOString()
         };
 
         users.push(newUser);
@@ -33,8 +37,10 @@ router.post('/register', async (req, res) => {
         const saved = await fileHandler.write('users', users);
 
         if (saved) {
+            console.log('User registered successfully:', email);
             res.json({ success: true, message: "Registration successful!" });
         } else {
+            console.error('Failed to save user to JSONBin');
             res.status(500).json({ success: false, message: "Failed to save to cloud" });
         }
     } catch (error) {
@@ -44,41 +50,45 @@ router.post('/register', async (req, res) => {
 });
 
 // --- LOGIN ---
-// In your backend/routes/auth.js
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = email.toLowerCase(); // Convert to lowercase for comparison
         
-        console.log('Login attempt for:', email); // Debug log
+        console.log('Login attempt for:', normalizedEmail);
         
         const users = await fileHandler.read('users') || [];
-        const user = users.find(u => u.email === email);
+        
+        // Case-insensitive email search
+        const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
         
         if (!user) {
-            console.log('User not found:', email);
+            console.log('User not found:', normalizedEmail);
             return res.status(401).json({ 
                 success: false, 
                 message: "User not found" 
             });
         }
         
-        // Check password (you should use bcrypt in production)
-        if (user.password !== password) {
-            console.log('Invalid password for:', email);
+        // FIXED: Use bcrypt to compare passwords
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        
+        if (!isPasswordValid) {
+            console.log('Invalid password for:', normalizedEmail);
             return res.status(401).json({ 
                 success: false, 
                 message: "Invalid password" 
             });
         }
         
-        console.log('Login successful for:', email);
+        console.log('Login successful for:', normalizedEmail);
         
-        // IMPORTANT: Send back the email and userName
+        // Return user info (never send password back!)
         res.json({ 
             success: true, 
             message: "Login successful",
-            email: user.email,           // Send the email back
-            userName: user.name || user.fullName || email.split('@')[0] // Send name back
+            email: user.email, // Send the stored email (might be lowercase)
+            userName: user.name || email.split('@')[0]
         });
         
     } catch (error) {
@@ -87,6 +97,23 @@ router.post('/login', async (req, res) => {
             success: false, 
             message: "Server error" 
         });
+    }
+});
+
+// Optional: Add a test endpoint to check if a user exists
+router.post('/check-user', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const users = await fileHandler.read('users') || [];
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        
+        res.json({
+            exists: !!user,
+            email: email,
+            storedEmail: user ? user.email : null
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -36,60 +36,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIN LOGIC ---
-    const loginBtn = document.getElementById('btn-login');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+    // In your login function, you might want to show the exact email that was saved
+const loginBtn = document.getElementById('btn-login');
+if (loginBtn) {
+    loginBtn.addEventListener('click', async () => {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
 
-            // Basic Validation
-            if (!email || !password) {
-                alert("Please enter both email and password!");
-                return;
-            }
+        if (!email || !password) {
+            alert("Please enter both email and password!");
+            return;
+        }
 
-            try {
-                console.log('Attempting login for:', email); // Debug log
+        try {
+            console.log('Attempting login for:', email);
+            
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const result = await response.json();
+            console.log('Login response:', result);
+            
+            if (result.success) {
+                // Save the email exactly as returned from server
+                localStorage.setItem('userEmail', result.email);
+                localStorage.setItem('userName', result.userName);
                 
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                console.log('Saved to localStorage:', { 
+                    email: result.email, 
+                    userName: result.userName 
                 });
-                
-                const result = await response.json();
-                console.log('Login response:', result); // Debug log
-                
-                if (result.success) {
-                    // Save both email and name to localStorage
-                    // Use the email from the form if the backend doesn't return it
-                    const userEmail = result.email || email; // Fallback to form email
-                    const userName = result.userName || name || email.split('@')[0];
-                    
-                    localStorage.setItem('userEmail', userEmail);
-                    localStorage.setItem('userName', userName);
-                    
-                    console.log('Saved to localStorage:', { 
-                        userEmail, 
-                        userName 
-                    }); // Debug log
-                    
-                    // Verify it was saved
-                    console.log('localStorage after save:', {
-                        email: localStorage.getItem('userEmail'),
-                        name: localStorage.getItem('userName')
-                    });
 
-                    window.location.href = 'dashboard.html';
-                } else {
-                    alert(result.message || "Login failed");
-                }
-            } catch (error) {
-                console.error("Login failed:", error);
-                alert("Login failed. Please try again.");
+                window.location.href = 'dashboard.html';
+            } else {
+                alert(result.message);
             }
-        });
-    }
+        } catch (error) {
+            console.error("Login failed:", error);
+            alert("Login failed. Please try again.");
+        }
+    });
+}
     
     // Optional: Add a logout function
     const logoutBtn = document.getElementById('btn-logout');
