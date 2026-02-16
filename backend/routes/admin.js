@@ -28,4 +28,20 @@ router.post('/add-candidate', async (req, res) => {
     res.json({ success: true, candidate: newCandidate });
 });
 
+// This will reset all hasVoted flags to false
+router.post('/reset-election', async (req, res) => {
+    const fileHandler = require('../utils/fileHandler');
+    try {
+        const users = await fileHandler.read('users');
+        const updatedUsers = users.map(user => ({ ...user, hasVoted: false }));
+        
+        await fileHandler.write('users', updatedUsers);
+        // Also clear the votes bin for a fresh start
+        await fileHandler.write('votes', []); 
+        
+        res.json({ success: true, message: "Election reset successful!" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Reset failed" });
+    }
+});
 module.exports = router;

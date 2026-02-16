@@ -18,11 +18,19 @@ router.get('/status', async (req, res) => {
 router.post('/submit', async (req, res) => {
     try {
         const { voterEmail, selections } = req.body;
+        
+        // 1. Clean the incoming email (lowercase and remove hidden spaces)
+        const cleanEmail = voterEmail ? voterEmail.toLowerCase().trim() : "";
+
         const users = await fileHandler.read('users') || [];
         const votes = await fileHandler.read('votes') || [];
 
-        const userIndex = users.findIndex(u => u.email === voterEmail);
+        // 2. Search using lowercase comparison
+        const userIndex = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
+        
         if (userIndex === -1) {
+            // This is where your error is currently triggering
+            console.log(`Vote failed: ${cleanEmail} not in database.`);
             return res.status(404).json({ success: false, message: "User not found." });
         }
 
@@ -30,8 +38,9 @@ router.post('/submit', async (req, res) => {
             return res.status(403).json({ success: false, message: "Already voted." });
         }
 
+        // ... rest of your code ...
         votes.push({
-            voterEmail,
+            voterEmail: cleanEmail,
             selections,
             timestamp: new Date().toISOString()
         });
@@ -48,8 +57,6 @@ router.post('/submit', async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 });
-
-
 
 // GET RESULTS
 router.get('/results', async (req, res) => {    
