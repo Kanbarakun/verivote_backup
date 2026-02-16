@@ -92,3 +92,49 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`API URL: http://localhost:${PORT}`);
 });
+
+// Add this debug endpoint to check JSONBin configuration
+app.get('/api/debug/jsonbin', async (req, res) => {
+    try {
+        const fileHandler = require('./utils/fileHandler');
+        
+        // Check if API key exists
+        if (!process.env.JSONBIN_API_KEY) {
+            return res.json({ 
+                error: 'JSONBIN_API_KEY is missing in environment variables',
+                hasApiKey: false 
+            });
+        }
+
+        // Check bin IDs
+        const binStatus = {
+            users: !!process.env.BIN_ID_USERS,
+            votes: !!process.env.BIN_ID_VOTES,
+            candidates: !!process.env.BIN_ID_CANDIDATES,
+            elections: !!process.env.BIN_ID_ELECTIONS
+        };
+
+        // Try to read from users bin to test connection
+        let usersTest = null;
+        let votesTest = null;
+        
+        try {
+            usersTest = await fileHandler.read('users');
+            votesTest = await fileHandler.read('votes');
+        } catch (e) {
+            console.error('Test read failed:', e);
+        }
+
+        res.json({
+            hasApiKey: true,
+            binIds: binStatus,
+            usersCount: usersTest ? usersTest.length : 0,
+            votesCount: votesTest ? votesTest.length : 0,
+            sampleUser: usersTest && usersTest.length > 0 ? usersTest[0] : null,
+            message: 'Check your Render environment variables if bins are missing'
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
