@@ -1,0 +1,95 @@
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e0e0e0;
+    color: #333;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    margin-top: 250px;
+
+}
+.container {
+    max-width: 900px;
+    background-color: #ffffff;
+    padding: 50px;
+    border-radius: 50px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+h2 {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #1f3c88; /* classic navy blue */
+}
+
+h4 {
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background-color: #d6d6d6;
+    margin: 25px 0;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.badge {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: 20px;
+}
+
+.btn {
+    border-radius: 6px;
+    font-weight: 550;
+    padding: 8px 14px;
+}
+
+.btn-success {
+    background-color: #2e7d32;
+    border: none;
+}
+
+.btn-danger {
+    background-color: #c62828;
+    border: none;
+}
+
+.btn-primary {
+    background-color: #1f3c88;
+    border: none;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.form-control {
+    border-radius: 6px;
+    border: 1px solid #ddcdcd;
+    padding: 10px;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: #1f3c88;
+    box-shadow: 0 0 5px rgba(31, 60, 136, 0.3);
+}
+
+.card button {
+    width: 100%;
+}
+
+.card .btn + .btn {
+    margin-top: 10px;
+}

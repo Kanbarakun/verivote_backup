@@ -1,30 +1,234 @@
-*{
-    -webkit-tap-highlight-color: transparent;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-::selection{
-    background: transparent;
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body.registration-body {
-    background: linear-gradient(135deg, #c3cfd9 0%, #e2e8f0 100%);
-    font-family: sans-serif;
+/* Background styling for both pages */
+.registration-body {
+    background: 
+        linear-gradient(
+            rgba(0, 32, 91, 0.85),
+            rgba(0, 32, 91, 0.85)
+        ),
+        url("../img/philippines-voting-bg.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #ffffff;
+    min-height: 100vh;
 }
 
+/* Container adjustments */
+.container {
+    padding: 20px;
+}
+
+/* LEFT SIDE BRANDING */
+.col-md-6.text-center {
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.col-md-6.text-center h1 {
+    color: #ffffff;
+    letter-spacing: 2px;
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.col-md-6.text-center p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 400px;
+    margin-top: 20px;
+}
+
+.logo-placeholder {
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo-placeholder i {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* FORM CONTAINER */
 .form-container {
-    background: rgba(255, 255, 255, 0.4); /* Semi-transparent */
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: #ffffff;
+    color: #333;
+    border-radius: 18px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
 }
 
-input.form-control {
-    border-radius: 15px;
-    border: none;
-    padding: 12px;
+/* FORM HEADINGS */
+.form-container h2 {
+    text-align: center;
+    font-weight: 600;
+    color: #00205b;
+    margin-bottom: 30px;
+    font-size: 2rem;
 }
 
-label {
+/* LABELS */
+.form-container label {
     font-weight: 500;
+    color: #00205b;
     margin-bottom: 5px;
+    display: block;
+    text-align: left;
+}
+
+/* INPUT FIELDS */
+.form-control {
+    border-radius: 10px;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #ce1126;
+    box-shadow: 0 0 0 0.2rem rgba(206, 17, 38, 0.25);
+    outline: none;
+}
+
+/* BUTTON STYLES */
+#btn-login, #btn-register {
+    background: linear-gradient(135deg, #00205b, #ce1126);
+    border: none;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #ffffff;
+    transition: all 0.3s ease;
+    padding: 12px;
+    border-radius: 50px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 10px;
+}
+
+#btn-login:hover, #btn-register:hover {
+    background: linear-gradient(135deg, #ce1126, #00205b);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* LINKS */
+.form-container a {
+    font-weight: 500;
+    text-decoration: none;
+    color: #ce1126;
+    transition: color 0.3s ease;
+}
+
+.form-container a:hover {
+    text-decoration: underline;
+    color: #00205b;
+}
+
+/* FORM TEXT */
+.form-container p {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #666;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+    .col-md-6.text-center {
+        margin-bottom: 40px;
+    }
+    
+    .col-md-6.text-center h1 {
+        font-size: 2.5rem;
+    }
+    
+    .form-container {
+        padding: 30px 20px !important;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+}
+
+/* Small screen adjustments */
+@media (max-width: 576px) {
+    .form-container {
+        padding: 25px 15px !important;
+    }
+    
+    .col-md-6.text-center h1 {
+        font-size: 2rem;
+    }
+    
+    .logo-placeholder {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .logo-placeholder i {
+        font-size: 3rem;
+    }
+}
+
+/* Animation for form appearance */
+.form-container {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Input field spacing */
+.form-control.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.form-control.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Focus state for better accessibility */
+.form-control:focus {
+    border-color: #ce1126;
+    box-shadow: 0 0 0 0.2rem rgba(206, 17, 38, 0.25);
+}
+
+/* Button focus state */
+#btn-login:focus, #btn-register:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(206, 17, 38, 0.5);
 }

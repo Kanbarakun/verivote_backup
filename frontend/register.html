@@ -2,42 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>VeriVote – Register</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriVote - Sign In</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css"> <link rel="stylesheet" href="css/confirm.css"> </head>
-<body class="registration-body">
-    <div class="container d-flex align-items-center justify-content-center min-vh-100">
-        <div class="row w-100">
-            <div class="col-md-6 text-center">
-                <h1 class="display-3 fw-bold">VeriVote</h1>
-                <img src="path/to/your/logo_icon.png" alt="Logo" class="img-fluid my-4" style="max-width: 200px;">
-                <p>A Trusted Platform for Digital Political Participation</p>
-            </div>
 
-            <div class="col-md-6">
-                <div class="form-container p-5 shadow-sm rounded">
-                    <h2 class="mb-4">Sign in</h2>
-                    
-                    <label for="reg-name">Name:</label>
-                    <input type="text" id="reg-name" class="form-control mb-3" placeholder="Enter Name">
+    <!-- Bootstrap & Custom CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/index.css">
 
-                    <label for="reg-password">Password:</label>
-                    <input type="password" id="reg-password" class="form-control mb-3" placeholder="Enter Password">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
 
-                    <label for="reg-confirm-password">Confirm Password:</label>
-                    <input type="password" id="reg-confirm-password" class="form-control mb-3" placeholder="Re-enter Password">
+<div class="overlay">
+    <div class="login-wrapper">
 
-                    <label for="reg-email">Email & Phone Num:</label>
-                    <input type="text" id="reg-email" class="form-control mb-4" placeholder="Enter Email or Phone">
+        <h1 class="title">Verivote</h1>
+        <p class="subtitle">A Trusted Platform for Digital Political Participation</p>
 
-                    <button id="btn-register" class="btn btn-dark w-100 rounded-pill py-2">Sign in</button>
-                    
-                    <p class="mt-3 text-center">Already have an Account? <a href="index.html" class="text-danger">Log in</a></p>
-                </div>
-            </div>
+        <!-- Name field with icon -->
+        <label>Name:</label>
+        <div class="input-box">
+            <input type="text" id="reg-name" placeholder="Enter Name" required>
+            <i class="fa fa-user"></i>
         </div>
+
+        <!-- Password field with icon -->
+        <label>Password:</label>
+        <div class="input-box">
+            <input type="password" id="reg-password" placeholder="Enter Password" required>
+            <i class="fa fa-lock"></i>
+        </div>
+
+        <!-- Confirm Password field with icon -->
+        <label>Confirm Password:</label>
+        <div class="input-box">
+            <input type="password" id="reg-confirm-password" placeholder="Re-enter Password" required>
+            <i class="fa fa-lock"></i>
+        </div>
+
+        <!-- Email & Phone field with icon -->
+        <label>Email & Phone Num:</label>
+        <div class="input-box">
+            <input type="text" id="reg-email" placeholder="Enter Email or Phone" required>
+            <i class="fa fa-envelope"></i>
+        </div>
+
+        <!-- Login link -->
+        <p class="signup-text">
+            Already have an Account?
+            <a href="index.html">Log in</a>
+        </p>
+
+        <!-- Register button -->
+        <button class="login-btn" onclick="register()">Sign Up</button>
+
     </div>
 
-    <script src="js/auth.js"></script>
+    <!-- Footer with VV.net information and links -->
+    <footer>
+        <div class="footer-left">
+            <h4>VV.net</h4>
+            <p>
+                A Philippine voting site helps Filipinos learn about candidates
+                and take part in elections online. It makes voting easier,
+                clearer, and more accessible while supporting fair and honest democracy.
+            </p>
+        </div>
+
+        <div class="footer-links">
+            <div>
+                <h6>Information</h6>
+                <p>Core features</p>
+                <p>Pro experience</p>
+                <p>Integrations</p>
+            </div>
+
+            <div>
+                <h6>Learn More</h6>
+                <p>Blog</p>
+                <p>Customers Study</p>
+                <p>Best Practices</p>
+            </div>
+
+            <div>
+                <h6>Support</h6>
+                <p>Contact</p>
+                <p>Support</p>
+                <p>Legal</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script>
+function register() {
+    // Get form values
+    const name = document.getElementById('reg-name').value;
+    const password = document.getElementById('reg-password').value;
+    const confirmPassword = document.getElementById('reg-confirm-password').value;
+    const email = document.getElementById('reg-email').value;
+
+    // Basic validation
+    if (!name || !password || !confirmPassword || !email) {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+    }
+
+    alert("Registration successful! Please log in.");
+    window.location.href = "index.html";
+}
+</script>
+
 </body>
 </html>
