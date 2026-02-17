@@ -1,0 +1,188 @@
+        /* Additional styles specific to results page */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: url("img/download.jpg") no-repeat center center/cover;
+            min-height: 100vh;
+        }
+
+        .overlay {
+            background: rgba(0, 0, 0, 0.45);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .results-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .main-header-pill {
+            background: rgba(255, 255, 255, 0.9);
+            color: #00205b;
+            font-size: 2.5rem;
+            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 60px;
+            display: inline-block;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .vote-column-container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 25px;
+            height: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .vote-column-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .column-title {
+            background: linear-gradient(135deg, #00205b, #ce1126);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 12px 25px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .back-btn {
+            background: white;
+            color: #00205b;
+            border: none;
+            padding: 15px 50px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background: #e5e5e5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn i {
+            margin-right: 10px;
+        }
+
+        /* Stats cards for additional info */
+        .stats-row {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 20px 35px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00205b;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Footer styling matching login page */
+        footer {
+            color: #fff;
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 60px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .footer-left {
+            max-width: 400px;
+        }
+
+        .footer-left h4 {
+            color: white;
+            font-weight: bold;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 60px;
+        }
+
+        .footer-links h6 {
+            font-weight: bold;
+            color: white;
+        }
+
+        .footer-links p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+        }
+
+        .footer-links p:hover {
+            color: white;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-header-pill {
+                font-size: 1.8rem;
+                padding: 12px 25px;
+            }
+            
+            .column-title {
+                font-size: 1.2rem;
+            }
+            
+            footer {
+                padding: 30px 20px;
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .footer-links {
+                gap: 30px;
+                flex-wrap: wrap;
+            }
+        }
