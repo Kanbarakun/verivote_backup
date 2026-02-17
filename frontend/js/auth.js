@@ -70,7 +70,7 @@ if (loginBtn) {
                     userName: result.userName 
                 });
 
-                window.location.href = 'dashboard.html';
+                window.location.href = 'homepage.html';
             } else {
                 alert(result.message);
             }
