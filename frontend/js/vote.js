@@ -15,16 +15,16 @@ console.log('Using API URL:', API_URL);
 // Candidate data - this is what populates the columns
 const candidatesData = {
     president: [
-        { id: "p1", name: "John Doe", photo: "imgs/john.jpg", bio: "Leading with vision." },
-        { id: "p2", name: "Jane Smith", photo: "imgs/jane.jpg", bio: "Focus on growth." }
+        { id: "p1", name: "Maria Santos", photo: "imgs/john.jpg", bio: "Leading with vision." },
+        { id: "p2", name: "Jose Reyes", photo: "imgs/jane.jpg", bio: "Focus on growth." }
     ],
     senators: [
-        { id: "s1", name: "Alice Johnson", photo: "imgs/alice.jpg", bio: "Economic reform." },
-        { id: "s2", name: "Bob Lee", photo: "imgs/bob.jpg", bio: "Public safety." }
+        { id: "s1", name: "Carla Villanueva", photo: "imgs/alice.jpg", bio: "Economic reform." },
+        { id: "s2", name: "Ramon Lopez", photo: "imgs/bob.jpg", bio: "Public safety." }
     ],
     mayor: [
-        { id: "m1", name: "Charlie Brown", photo: "imgs/charlie.jpg", bio: "Urban transit." },
-        { id: "m2", name: "Diana Prince", photo: "imgs/diana.jpg", bio: "Community focused." }
+        { id: "m1", name: "Tonyo Fernandez", photo: "imgs/charlie.jpg", bio: "Urban transit." },
+        { id: "m2", name: "Elena Castillo", photo: "imgs/diana.jpg", bio: "Community focused." }
     ]
 };
 
