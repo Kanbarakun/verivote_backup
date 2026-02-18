@@ -8,7 +8,8 @@ const BINS = {
     users: process.env.BIN_ID_USERS,
     candidates: process.env.BIN_ID_CANDIDATES,
     elections: process.env.BIN_ID_ELECTIONS,
-    votes: process.env.BIN_ID_VOTES
+    votes: process.env.BIN_ID_VOTES,
+    admins: process.env.BIN_ID_ADMINS
 };
 
 const fileHandler = {
