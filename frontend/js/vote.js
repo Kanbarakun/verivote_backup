@@ -30,6 +30,58 @@ const candidatesData = {
 
 let selections = { president: null, senators: null, mayor: null };
 
+// Custom notification function
+function showNotification(message, type = 'warning', title = 'Notification') {
+    const modalEl = document.getElementById('notificationModal');
+    if (!modalEl) {
+        // Fallback to alert if modal doesn't exist
+        alert(message);
+        return;
+    }
+
+    // Set icon and colors based on type
+    const iconEl = document.getElementById('notificationIcon');
+    const titleEl = document.getElementById('notificationTitle');
+    const messageEl = document.getElementById('notificationMessage');
+    
+    // Remove existing icon classes
+    iconEl.className = 'notification-icon';
+    
+    // Set appropriate icon and class
+    switch(type) {
+        case 'warning':
+            iconEl.classList.add('warning');
+            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            titleEl.textContent = title || 'Warning';
+            break;
+        case 'error':
+            iconEl.classList.add('error');
+            iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
+            titleEl.textContent = title || 'Error';
+            break;
+        case 'success':
+            iconEl.classList.add('success');
+            iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+            titleEl.textContent = title || 'Success';
+            break;
+        case 'info':
+            iconEl.classList.add('info');
+            iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
+            titleEl.textContent = title || 'Information';
+            break;
+        default:
+            iconEl.classList.add('info');
+            iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
+            titleEl.textContent = title || 'Notification';
+    }
+    
+    messageEl.textContent = message;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
 // Test the API connection on page load
 async function testAPIConnection() {
     try {
@@ -39,9 +91,11 @@ async function testAPIConnection() {
             console.log('API connection successful:', data);
         } else {
             console.error('API test failed with status:', response.status);
+            showNotification('Cannot connect to voting server. Please check your connection.', 'error');
         }
     } catch (error) {
         console.error('Cannot connect to API:', error);
+        showNotification('Network error. Please check your internet connection.', 'error');
     }
 }
 
@@ -49,8 +103,10 @@ async function testAPIConnection() {
 async function checkStatus() {
     const email = localStorage.getItem('userEmail');
     if (!email) {
-        alert("Please log in first.");
-        window.location.href = "index.html";
+        showNotification('Please log in first.', 'warning', 'Login Required');
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 2000);
         return;
     }
 
@@ -66,8 +122,10 @@ async function checkStatus() {
         console.log("Status check:", data);
 
         if (data.hasVoted) {
-            alert("You have already voted. Redirecting to results.");
-            window.location.href = "results.html";
+            showNotification('You have already voted. Redirecting to results.', 'info', 'Already Voted');
+            setTimeout(() => {
+                window.location.href = "results.html";
+            }, 2000);
         }
     } catch (error) {
         console.log("Could not verify status:", error.message);
@@ -118,14 +176,16 @@ function renderColumns() {
 // Submit vote function
 document.getElementById('btn-submit-vote').addEventListener('click', async () => {
     if (!selections.president || !selections.senators || !selections.mayor) {
-        alert("Please pick one candidate in every column!");
+        showNotification('Please select one candidate from each column!', 'warning', 'Incomplete Selection');
         return;
     }
 
     const email = localStorage.getItem('userEmail');
     if (!email) {
-        alert("No user email found. Please log in again.");
-        window.location.href = "index.html";
+        showNotification('No user email found. Please log in again.', 'error', 'Session Expired');
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 2000);
         return;
     }
 
@@ -163,11 +223,14 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
                 }
             }
             
-            throw new Error("Server route not found. Please check backend deployment.");
+            showNotification('Server route not found. Please check backend deployment.', 'error', 'Connection Error');
+            submitBtn.innerText = "DONE VOTING";
+            submitBtn.disabled = false;
+            return;
         }
 
         if (res.status === 403) {
-            alert("This email has already cast a ballot. You cannot vote twice!");
+            showNotification('This email has already cast a ballot. You cannot vote twice!', 'warning', 'Already Voted');
             submitBtn.innerText = "DONE VOTING";
             submitBtn.disabled = false;
             return;
@@ -183,8 +246,8 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
 
     } catch (e) {
         console.error('Submission error:', e);
-        alert("Submission failed: " + e.message);
-        submitBtn.innerText = "SUBMIT VOTE";
+        showNotification('Submission failed: ' + e.message, 'error', 'Vote Failed');
+        submitBtn.innerText = "DONE VOTING";
         submitBtn.disabled = false;
     }
 });
@@ -195,7 +258,7 @@ function showSuccess() {
         const successPopup = new bootstrap.Modal(modalEl);
         successPopup.show();
     } else {
-        alert("Vote Submitted Successfully!");
+        showNotification('Vote Submitted Successfully!', 'success', 'Thank You!');
     }
 
     setTimeout(() => {
