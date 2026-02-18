@@ -138,3 +138,32 @@ app.get('/api/debug/jsonbin', async (req, res) => {
         res.status(500).json({ error: error.message, stack: error.stack });
     }
 });
+
+app.get('/admin-login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Create initial admin account (run once)
+async function createInitialAdmin() {
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash('Admin@123', 10);
+    
+    const adminExists = await db.collection('admins').findOne({ email: 'admin@verivote.com' });
+    if (!adminExists) {
+        await db.collection('admins').insertOne({
+            email: 'admin@verivote.com',
+            password: hashedPassword,
+            name: 'Super Admin',
+            role: 'super-admin',
+            createdAt: new Date()
+        });
+        console.log('Initial admin created');
+    }
+}
+
+// Call this when server starts
+createInitialAdmin();
