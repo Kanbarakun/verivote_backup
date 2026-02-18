@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     alert("Account Created! Redirecting to login...");
-                    window.location.href = 'index.html'; 
+                    window.location.href = 'login.html'; 
                 } else {
                     alert("Error: " + result.message);
                 }
@@ -87,7 +87,7 @@ if (loginBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userName');
-            window.location.href = 'index.html';
+            window.location.href = 'login.html';
         });
     }
 });

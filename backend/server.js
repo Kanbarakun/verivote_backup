@@ -80,7 +80,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use((req, res) => {
     // Only serve index.html for non-API routes
     if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(__dirname, '../frontend/index.html'));
+        res.sendFile(path.join(__dirname, '../frontend/login.html'));
     } else {
         // If it's an API route that wasn't found, return 404
         res.status(404).json({ error: 'API endpoint not found' });

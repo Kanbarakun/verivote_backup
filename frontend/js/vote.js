@@ -105,7 +105,7 @@ async function checkStatus() {
     if (!email) {
         showNotification('Please log in first.', 'warning', 'Login Required');
         setTimeout(() => {
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         }, 2000);
         return;
     }
@@ -184,7 +184,7 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
     if (!email) {
         showNotification('No user email found. Please log in again.', 'error', 'Session Expired');
         setTimeout(() => {
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         }, 2000);
         return;
     }
