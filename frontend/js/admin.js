@@ -116,46 +116,169 @@ function getActivityIcon(action) {
     return 'fa-history';
 }
 
+// Store chart instances globally
+let votesChartInstance = null;
+let senatorsChartInstance = null;
+
 // Render charts
 function renderCharts(results) {
     if (!results) return;
     
-    // President chart
-    if (document.getElementById('votesChart')) {
-        new Chart(document.getElementById('votesChart'), {
+    // Destroy existing chart instances if they exist
+    if (votesChartInstance) {
+        votesChartInstance.destroy();
+        votesChartInstance = null;
+    }
+    
+    if (senatorsChartInstance) {
+        senatorsChartInstance.destroy();
+        senatorsChartInstance = null;
+    }
+    
+    // President/Mayor chart (votesChart)
+    const votesCtx = document.getElementById('votesChart');
+    if (votesCtx) {
+        // Prepare data for President and Mayor
+        const presidentData = Object.entries(results.president || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        const mayorData = Object.entries(results.mayor || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        // Combine for display
+        const allLabels = [...presidentData.map(d => d.label), ...mayorData.map(d => d.label)];
+        const allVotes = [...presidentData.map(d => d.votes), ...mayorData.map(d => d.votes)];
+        
+        votesChartInstance = new Chart(votesCtx, {
             type: 'bar',
             data: {
-                labels: Object.keys(results.president || {}),
+                labels: allLabels,
                 datasets: [{
-                    label: 'President Votes',
-                    data: Object.values(results.president || {}),
-                    backgroundColor: '#00205b'
+                    label: 'Votes',
+                    data: allVotes,
+                    backgroundColor: [
+                        '#00205b', '#ce1126', '#4a7db5', '#ffd700', 
+                        '#28a745', '#dc3545', '#6c757d', '#17a2b8'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'President & Mayor Votes'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
             }
         });
     }
     
     // Senators chart
-    if (document.getElementById('senatorsChart')) {
-        new Chart(document.getElementById('senatorsChart'), {
+    const senatorsCtx = document.getElementById('senatorsChart');
+    if (senatorsCtx) {
+        const senatorsData = Object.entries(results.senators || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        senatorsChartInstance = new Chart(senatorsCtx, {
             type: 'bar',
             data: {
-                labels: Object.keys(results.senators || {}),
+                labels: senatorsData.map(d => d.label),
                 datasets: [{
-                    label: 'Senator Votes',
-                    data: Object.values(results.senators || {}),
-                    backgroundColor: '#ce1126'
+                    label: 'Votes',
+                    data: senatorsData.map(d => d.votes),
+                    backgroundColor: '#ce1126',
+                    borderWidth: 1,
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Senator Votes'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
             }
         });
+    }
+}
+
+// Update loadDashboardStats function
+async function loadDashboardStats() {
+    if (!checkAdminAuth()) return;
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch('/api/admin/stats', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update stats cards with safe defaults
+            document.getElementById('totalVoters').textContent = data.stats?.totalVoters || 0;
+            document.getElementById('totalVotes').textContent = data.stats?.totalVotes || 0;
+            document.getElementById('turnout').textContent = (data.stats?.turnout || 0) + '%';
+            
+            // Update election status
+            const statusEl = document.getElementById('activeElection');
+            if (statusEl) {
+                const hasActive = data.stats?.hasActiveElection || false;
+                statusEl.textContent = hasActive ? 'Active' : 'Inactive';
+                statusEl.className = hasActive ? 'badge bg-success' : 'badge bg-secondary';
+            }
+            
+            // Load recent activity
+            loadRecentActivity(data.stats?.recentActivity || []);
+            
+            // Render charts with results
+            if (data.stats?.results) {
+                renderCharts(data.stats.results);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        showError('Failed to load dashboard statistics');
+    } finally {
+        showLoading(false);
     }
 }
 
