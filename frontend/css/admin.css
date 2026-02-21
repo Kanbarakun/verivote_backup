@@ -542,3 +542,161 @@
         gap: 15px;
     }
 }
+
+/* Modal Fixes - Ensure modal appears above sidebar */
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal-dialog {
+    z-index: 1055 !important;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    border: none;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #00205b, #ce1126);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 15px 20px;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.modal-body {
+    padding: 25px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Form styles inside modal */
+.modal .form-group {
+    margin-bottom: 1rem;
+}
+
+.modal .form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.modal .form-control {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.modal .form-control:focus {
+    border-color: #00205b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.1);
+}
+
+.modal select.form-control {
+    height: 45px;
+}
+
+.modal textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Image upload section */
+.modal .image-upload-container {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.modal .btn-outline-primary {
+    background: transparent;
+    border: 2px solid #00205b;
+    color: #00205b;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.modal .btn-outline-primary:hover {
+    background: #00205b;
+    color: white;
+}
+
+/* Modal buttons */
+.modal .btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal .btn-secondary:hover {
+    background: #5a6268;
+}
+
+.modal .btn-primary {
+    background: linear-gradient(135deg, #00205b, #ce1126);
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(206, 17, 38, 0.3);
+}
+
+/* Fix for sidebar z-index */
+.sidebar {
+    z-index: 1000 !important;
+}
+
+/* Ensure main content doesn't block modal */
+.main-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+}
