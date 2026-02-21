@@ -702,3 +702,117 @@
         padding: 15px;
     }
 }
+
+/* Fix Modal Centering with Sidebar */
+.modal-dialog {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Force modal to center */
+.modal.fade .modal-dialog {
+    transform: none !important;
+}
+
+/* Ensure modal is above sidebar */
+.modal {
+    z-index: 2000 !important;
+}
+
+.modal-backdrop {
+    z-index: 1990 !important;
+}
+
+/* Prevent sidebar overlap */
+.sidebar {
+    z-index: 1000;
+}
+
+.modal-content {
+    max-width: 900px;
+    margin: auto;
+}
+
+.modal-body {
+    background: #fafafa;
+}
+
+/* ===== MODERN SIDEBAR ===== */
+.sidebar {
+    position: fixed;
+    width: 260px;
+    height: 100vh;
+    background: linear-gradient(180deg,#0d6efd,#0a58ca);
+    color: white;
+    padding-top: 20px;
+    z-index: 1000;
+}
+
+.sidebar h3 {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 12px 20px;
+    color: white;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.sidebar a:hover {
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+}
+
+/* ===== MAIN CONTENT ===== */
+
+.main-content {
+    margin-left: 260px;
+    padding: 30px;
+    background: #f5f7fb;
+    min-height: 100vh;
+}
+
+/* ===== BUTTON STYLE ===== */
+
+.btn-primary {
+    border-radius: 25px;
+    padding: 10px 25px;
+}
+
+.btn-danger {
+    border-radius: 25px;
+}
+
+/* ===== MODAL FIX ===== */
+
+.modal-dialog {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.modal {
+    z-index: 2000 !important;
+}
+
+.modal-backdrop {
+    z-index: 1990 !important;
+}
+
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: none;
+    font-weight: bold;
+}
+
+.modal-body {
+    background: #fafafa;
+}
