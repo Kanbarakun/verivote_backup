@@ -20,15 +20,17 @@
 <body>
 
     <!-- Loading Spinner -->
-<div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-    <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
     </div>
-</div>
 
-<!-- Error Message -->
-<div id="errorMessage" style="display: none; position: fixed; top: 20px; right: 20px; background: #f44336; color: white; padding: 15px 25px; border-radius: 10px; z-index: 10000; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
-</div>
+    <!-- Error Message -->
+    <div id="errorMessage" style="display: none; position: fixed; top: 20px; right: 20px; background: #f44336; color: white; padding: 15px 25px; border-radius: 10px; z-index: 10000; box-shadow: 0 5px 15px rgba(0,0,0,0.3);"></div>
+
+    <!-- Success Message -->
+    <div id="successMessage" style="display: none; position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 15px 25px; border-radius: 10px; z-index: 10000; box-shadow: 0 5px 15px rgba(0,0,0,0.3);"></div>
 
     <div class="admin-container">
         <!-- Sidebar -->
@@ -134,22 +136,33 @@
                             <i class="fas fa-flag-checkered"></i>
                         </div>
                         <div class="stat-info">
-                            <h3 id="activeElection">Active</h3>
+                            <h3 id="activeElection">Inactive</h3>
                             <p>Election Status</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts -->
+                <!-- Charts - FIXED: Now properly inside dashboard section -->
                 <div class="charts-grid">
                     <div class="chart-card">
-                        <h3>Votes per Position</h3>
-                        <canvas id="votesChart"></canvas>
+                        <h3>President Votes</h3>
+                        <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="presidentChart"></canvas>
+                        </div>
                     </div>
                     
                     <div class="chart-card">
-                        <h3>Leading Candidates</h3>
-                        <canvas id="leadingChart"></canvas>
+                        <h3>Senator Votes</h3>
+                        <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="senatorsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Mayor Votes</h3>
+                        <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="mayorChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -182,7 +195,7 @@
                     
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search candidates..." id="candidateSearch" onkeyup="searchCandidates()">
+                        <input type="text" placeholder="Search candidates..." id="candidateSearch" onkeyup="filterCandidates()">
                     </div>
                 </div>
 
@@ -201,7 +214,7 @@
                 <div class="election-status-card">
                     <h3>Current Election Status</h3>
                     <div class="status-indicator" id="electionStatus">
-                        <span class="badge active">ACTIVE</span>
+                        <span class="badge bg-secondary">INACTIVE</span>
                     </div>
                     
                     <div class="election-timer" id="electionTimer">
@@ -211,9 +224,6 @@
                     <div class="election-controls">
                         <button class="btn-success" onclick="startElection()">
                             <i class="fas fa-play"></i> Start Election
-                        </button>
-                        <button class="btn-warning" onclick="pauseElection()">
-                            <i class="fas fa-pause"></i> Pause
                         </button>
                         <button class="btn-danger" onclick="endElection()">
                             <i class="fas fa-stop"></i> End Election
@@ -227,24 +237,24 @@
                     <div class="settings-form">
                         <div class="form-group">
                             <label>Election Title</label>
-                            <input type="text" id="electionTitle" value="Philippine General Election 2024">
+                            <input type="text" id="electionTitle" class="form-control" value="Philippine General Election 2024">
                         </div>
                         
-                        <div class="form-row">
-                            <div class="form-group">
+                        <div class="form-row" style="display: flex; gap: 15px;">
+                            <div class="form-group" style="flex: 1;">
                                 <label>Start Date</label>
-                                <input type="datetime-local" id="startDate">
+                                <input type="datetime-local" id="startDate" class="form-control">
                             </div>
                             
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label>End Date</label>
-                                <input type="datetime-local" id="endDate">
+                                <input type="datetime-local" id="endDate" class="form-control">
                             </div>
                         </div>
                         
                         <div class="form-group">
                             <label>Max Votes per Position</label>
-                            <select id="maxVotes">
+                            <select id="maxVotes" class="form-control">
                                 <option value="1">1 vote per position</option>
                                 <option value="3">3 votes for Senators</option>
                                 <option value="5">5 votes for Senators</option>
@@ -302,33 +312,13 @@
                 </div>
             </div>
 
-            <!-- Charts Grid in Dashboard Section -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>President & Mayor Votes</h3>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="votesChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-card">
-                    <h3>Senator Votes</h3>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="senatorsChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
             <!-- Results Section -->
             <div id="results" class="content-section">
                 <div class="section-header">
                     <h1>Election Results</h1>
                     <div class="result-actions">
-                        <button class="btn-primary" onclick="exportResults('pdf')">
-                            <i class="fas fa-file-pdf"></i> PDF
-                        </button>
                         <button class="btn-primary" onclick="exportResults('csv')">
-                            <i class="fas fa-file-csv"></i> CSV
+                            <i class="fas fa-file-csv"></i> Export CSV
                         </button>
                     </div>
                 </div>
@@ -365,11 +355,11 @@
                         <h3>Security Settings</h3>
                         <div class="setting-item">
                             <label>Two-Factor Authentication</label>
-                            <input type="checkbox" id="twoFactor">
+                            <input type="checkbox" id="twoFactor" class="form-check-input">
                         </div>
                         <div class="setting-item">
                             <label>Session Timeout (minutes)</label>
-                            <input type="number" id="sessionTimeout" value="30">
+                            <input type="number" id="sessionTimeout" class="form-control" value="30">
                         </div>
                         <button class="btn-primary" onclick="saveSecuritySettings()">Save</button>
                     </div>
@@ -378,14 +368,14 @@
                         <h3>API Configuration</h3>
                         <div class="setting-item">
                             <label>API URL</label>
-                            <input type="text" id="apiUrl" value="https://verivote-backup.onrender.com">
+                            <input type="text" id="apiUrl" class="form-control" value="https://verivote-backup.onrender.com">
                         </div>
-                        <button class="btn-primary" onclick="saveApiSettings()">Test Connection</button>
+                        <button class="btn-primary" onclick="testApiConnection()">Test Connection</button>
                     </div>
 
                     <div class="settings-card">
                         <h3>System Logs</h3>
-                        <div class="logs-container" id="systemLogs">
+                        <div class="logs-container" id="systemLogs" style="max-height: 200px; overflow-y: auto;">
                             <!-- Logs will be displayed here -->
                         </div>
                         <button class="btn-secondary" onclick="clearLogs()">Clear Logs</button>
@@ -395,9 +385,9 @@
         </div>
     </div>
 
-    <!-- Candidate Modal -->
+    <!-- Candidate Modal (Enhanced with image upload) -->
     <div class="modal fade" id="candidateModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="candidateModalTitle">Add Candidate</h5>
@@ -405,41 +395,60 @@
                 </div>
                 <div class="modal-body">
                     <form id="candidateForm">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="candidateName" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Position</label>
-                            <select id="candidatePosition" required>
-                                <option value="president">President</option>
-                                <option value="senators">Senator</option>
-                                <option value="mayor">Mayor</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Candidate ID</label>
-                            <input type="text" id="candidateId" placeholder="e.g., p1, s1, m1" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Photo URL</label>
-                            <input type="text" id="candidatePhoto" placeholder="imgs/candidate.jpg">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Bio/Platform</label>
-                            <textarea id="candidateBio" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select id="candidateStatus">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="image-upload-container">
+                                    <img id="candidateImagePreview" src="imgs/default.jpg" alt="Candidate" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid #00205b; margin-bottom: 15px;">
+                                    <div class="form-group">
+                                        <label for="candidatePhoto" class="btn btn-outline-primary">
+                                            <i class="fas fa-upload"></i> Upload Photo
+                                        </label>
+                                        <input type="file" id="candidatePhoto" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                                    </div>
+                                    <small class="text-muted d-block mt-2">Or enter URL below</small>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <input type="hidden" id="candidateId" name="id">
+                                <input type="hidden" id="candidatePhotoUrl" name="photo">
+                                
+                                <div class="form-group mb-3">
+                                    <label>Full Name</label>
+                                    <input type="text" class="form-control" id="candidateName" name="name" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label>Position</label>
+                                    <select class="form-control" id="candidatePosition" name="position" required>
+                                        <option value="president">President</option>
+                                        <option value="senators">Senator</option>
+                                        <option value="mayor">Mayor</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label>Candidate ID <small class="text-muted">(e.g., p1, s1, m1)</small></label>
+                                    <input type="text" class="form-control" id="candidateIdInput" name="id" placeholder="e.g., p1, s1, m1" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label>Photo URL <small class="text-muted">(optional if uploaded)</small></label>
+                                    <input type="text" class="form-control" id="candidatePhotoInput" placeholder="imgs/candidate.jpg" onchange="updatePhotoFromUrl(this.value)">
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label>Bio/Platform</label>
+                                    <textarea class="form-control" id="candidateBio" name="bio" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label>Status</label>
+                                    <select class="form-control" id="candidateStatus" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>

@@ -17,48 +17,51 @@
 <body>
     <div class="homepage-container">
         <!-- Navigation -->
-        <nav class="navbar">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <i class="fas fa-vote-yea me-2"></i>VeriVote
-                </a>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#home">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#about">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#features">Features</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#contact">Contact</a>
-                    </li>
-                </ul>
+<nav class="navbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-vote-yea me-2"></i>VeriVote
+        </a>
+        
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="#home">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="candidates.html">Candidates</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#about">About</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#features">Features</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#contact">Contact</a>
+            </li>
+        </ul>
 
-                <!-- Logged OUT state (visible by default) -->
-                <div class="logged-out-only" id="loggedOutNav">
-                    <a href="login.html" class="nav-link login-btn-nav">
-                        <i class="fas fa-sign-in-alt me-2"></i>Login
-                    </a>
-                </div>
+        <!-- Logged OUT state (visible by default) -->
+        <div class="logged-out-only" id="loggedOutNav">
+            <a href="login.html" class="nav-link login-btn-nav">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a>
+        </div>
 
-                <!-- Logged IN state (hidden by default) -->
-                <div class="logged-in-only" id="loggedInNav">
-                    <div class="user-info">
-                        <span>
-                            <i class="fas fa-user-circle"></i>
-                            <span id="userEmailDisplay">User</span>
-                        </span>
-                        <button class="logout-btn" onclick="logout()">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </button>
-                    </div>
-                </div>
+        <!-- Logged IN state (hidden by default) -->
+        <div class="logged-in-only" id="loggedInNav">
+            <div class="user-info">
+                <span>
+                    <i class="fas fa-user-circle"></i>
+                    <span id="userEmailDisplay">User</span>
+                </span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </button>
             </div>
-        </nav>
+        </div>
+    </div>
+</nav>
 
         <!-- Main Hero Content -->
         <div class="main-content" id="home">

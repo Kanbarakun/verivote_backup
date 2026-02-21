@@ -131,6 +131,23 @@ router.post('/submit', async (req, res) => {
     }
 });
 
+// CHECK ELECTION STATUS
+router.get('/election-status', async (req, res) => {
+    try {
+        const elections = await fileHandler.read('elections') || [];
+        const activeElection = elections.find(e => e.active === true);
+        
+        res.json({
+            success: true,
+            isActive: !!activeElection,
+            election: activeElection || null
+        });
+    } catch (error) {
+        console.error("Error checking election status:", error);
+        res.json({ success: true, isActive: false, election: null });
+    }
+});
+
 // GET RESULTS
 router.get('/results', async (req, res) => {    
     try {

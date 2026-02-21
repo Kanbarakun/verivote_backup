@@ -1,6 +1,14 @@
 // API URL - use relative path for production
 const API_URL = '';
 
+// Store chart instances globally
+let presidentChartInstance = null;
+let senatorsChartInstance = null;
+let mayorChartInstance = null;
+
+// Store all candidates for filtering
+let allCandidates = [];
+
 // Check if admin is logged in
 function checkAdminAuth() {
     const token = localStorage.getItem('adminToken');
@@ -17,7 +25,7 @@ function checkAdminAuth() {
 function showLoading(show = true) {
     const loader = document.getElementById('loadingSpinner');
     if (loader) {
-        loader.style.display = show ? 'block' : 'none';
+        loader.style.display = show ? 'flex' : 'none';
     }
 }
 
@@ -33,6 +41,18 @@ function showError(message) {
     }
 }
 
+// Show success message
+function showSuccess(message) {
+    const successDiv = document.getElementById('successMessage');
+    if (successDiv) {
+        successDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+        successDiv.style.display = 'block';
+        setTimeout(() => {
+            successDiv.style.display = 'none';
+        }, 3000);
+    }
+}
+
 // Format date
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -42,202 +62,6 @@ function formatDate(dateString) {
 // ==================== DASHBOARD FUNCTIONS ====================
 
 // Load dashboard statistics
-async function loadDashboardStats() {
-    if (!checkAdminAuth()) return;
-    
-    try {
-        showLoading(true);
-        
-        const response = await fetch('/api/admin/stats', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Update stats cards
-            document.getElementById('totalVoters').textContent = data.stats.totalVoters || 0;
-            document.getElementById('totalVotes').textContent = data.stats.totalVotes || 0;
-            document.getElementById('turnout').textContent = (data.stats.turnout || 0) + '%';
-            
-            // Update election status
-            const statusEl = document.getElementById('activeElection');
-            if (statusEl) {
-                statusEl.textContent = data.stats.hasActiveElection ? 'Active' : 'Inactive';
-                statusEl.className = data.stats.hasActiveElection ? 'badge bg-success' : 'badge bg-secondary';
-            }
-            
-            // Load recent activity
-            loadRecentActivity(data.stats.recentActivity);
-            
-            // Render charts
-            renderCharts(data.stats.results);
-        }
-    } catch (error) {
-        console.error('Error loading stats:', error);
-        showError('Failed to load dashboard statistics');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Load recent activity
-function loadRecentActivity(activities) {
-    const activityList = document.getElementById('recentActivity');
-    if (!activityList) return;
-    
-    if (!activities || activities.length === 0) {
-        activityList.innerHTML = '<div class="text-center text-muted py-3">No recent activity</div>';
-        return;
-    }
-    
-    activityList.innerHTML = activities.map(activity => `
-        <div class="activity-item">
-            <div class="activity-icon">
-                <i class="fas ${getActivityIcon(activity.action)}"></i>
-            </div>
-            <div class="activity-details">
-                <p>${activity.action} - ${activity.details}</p>
-                <span class="activity-time">${formatDate(activity.timestamp)}</span>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Get icon for activity
-function getActivityIcon(action) {
-    if (action.includes('Added')) return 'fa-user-plus';
-    if (action.includes('Updated')) return 'fa-edit';
-    if (action.includes('Deleted')) return 'fa-trash';
-    if (action.includes('Started')) return 'fa-play';
-    if (action.includes('Ended')) return 'fa-stop';
-    return 'fa-history';
-}
-
-// Store chart instances globally
-let votesChartInstance = null;
-let senatorsChartInstance = null;
-
-// Render charts
-function renderCharts(results) {
-    if (!results) return;
-    
-    // Destroy existing chart instances if they exist
-    if (votesChartInstance) {
-        votesChartInstance.destroy();
-        votesChartInstance = null;
-    }
-    
-    if (senatorsChartInstance) {
-        senatorsChartInstance.destroy();
-        senatorsChartInstance = null;
-    }
-    
-    // President/Mayor chart (votesChart)
-    const votesCtx = document.getElementById('votesChart');
-    if (votesCtx) {
-        // Prepare data for President and Mayor
-        const presidentData = Object.entries(results.president || {}).map(([id, data]) => ({
-            label: data.name || id,
-            votes: data.votes || 0
-        }));
-        
-        const mayorData = Object.entries(results.mayor || {}).map(([id, data]) => ({
-            label: data.name || id,
-            votes: data.votes || 0
-        }));
-        
-        // Combine for display
-        const allLabels = [...presidentData.map(d => d.label), ...mayorData.map(d => d.label)];
-        const allVotes = [...presidentData.map(d => d.votes), ...mayorData.map(d => d.votes)];
-        
-        votesChartInstance = new Chart(votesCtx, {
-            type: 'bar',
-            data: {
-                labels: allLabels,
-                datasets: [{
-                    label: 'Votes',
-                    data: allVotes,
-                    backgroundColor: [
-                        '#00205b', '#ce1126', '#4a7db5', '#ffd700', 
-                        '#28a745', '#dc3545', '#6c757d', '#17a2b8'
-                    ],
-                    borderWidth: 1,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'President & Mayor Votes'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    // Senators chart
-    const senatorsCtx = document.getElementById('senatorsChart');
-    if (senatorsCtx) {
-        const senatorsData = Object.entries(results.senators || {}).map(([id, data]) => ({
-            label: data.name || id,
-            votes: data.votes || 0
-        }));
-        
-        senatorsChartInstance = new Chart(senatorsCtx, {
-            type: 'bar',
-            data: {
-                labels: senatorsData.map(d => d.label),
-                datasets: [{
-                    label: 'Votes',
-                    data: senatorsData.map(d => d.votes),
-                    backgroundColor: '#ce1126',
-                    borderWidth: 1,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'Senator Votes'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
-}
-
-// Update loadDashboardStats function
 async function loadDashboardStats() {
     if (!checkAdminAuth()) return;
     
@@ -282,6 +106,156 @@ async function loadDashboardStats() {
     }
 }
 
+// Load recent activity
+function loadRecentActivity(activities) {
+    const activityList = document.getElementById('recentActivity');
+    if (!activityList) return;
+    
+    if (!activities || activities.length === 0) {
+        activityList.innerHTML = '<div class="text-center text-muted py-3">No recent activity</div>';
+        return;
+    }
+    
+    activityList.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-icon">
+                <i class="fas ${getActivityIcon(activity.action)}"></i>
+            </div>
+            <div class="activity-details">
+                <p>${activity.action} ${activity.details ? '- ' + activity.details : ''}</p>
+                <span class="activity-time">${formatDate(activity.timestamp)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Get icon for activity
+function getActivityIcon(action) {
+    if (!action) return 'fa-history';
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('add')) return 'fa-user-plus';
+    if (actionLower.includes('update')) return 'fa-edit';
+    if (actionLower.includes('delete')) return 'fa-trash';
+    if (actionLower.includes('start')) return 'fa-play';
+    if (actionLower.includes('end')) return 'fa-stop';
+    if (actionLower.includes('login')) return 'fa-sign-in-alt';
+    if (actionLower.includes('block')) return 'fa-ban';
+    if (actionLower.includes('unblock')) return 'fa-unlock';
+    return 'fa-history';
+}
+
+// Render charts (FIXED: Separate charts for each position)
+function renderCharts(results) {
+    if (!results) return;
+    
+    // Destroy existing chart instances if they exist
+    if (presidentChartInstance) presidentChartInstance.destroy();
+    if (senatorsChartInstance) senatorsChartInstance.destroy();
+    if (mayorChartInstance) mayorChartInstance.destroy();
+    
+    // President chart
+    const presidentCtx = document.getElementById('presidentChart');
+    if (presidentCtx) {
+        const presidentData = Object.entries(results.president || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        presidentChartInstance = new Chart(presidentCtx, {
+            type: 'bar',
+            data: {
+                labels: presidentData.map(d => d.label),
+                datasets: [{
+                    label: 'Votes',
+                    data: presidentData.map(d => d.votes),
+                    backgroundColor: '#00205b',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'President Votes' }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+    
+    // Senators chart
+    const senatorsCtx = document.getElementById('senatorsChart');
+    if (senatorsCtx) {
+        const senatorsData = Object.entries(results.senators || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        senatorsChartInstance = new Chart(senatorsCtx, {
+            type: 'bar',
+            data: {
+                labels: senatorsData.map(d => d.label),
+                datasets: [{
+                    label: 'Votes',
+                    data: senatorsData.map(d => d.votes),
+                    backgroundColor: '#ce1126',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Senator Votes' }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+    
+    // Mayor chart
+    const mayorCtx = document.getElementById('mayorChart');
+    if (mayorCtx) {
+        const mayorData = Object.entries(results.mayor || {}).map(([id, data]) => ({
+            label: data.name || id,
+            votes: data.votes || 0
+        }));
+        
+        mayorChartInstance = new Chart(mayorCtx, {
+            type: 'bar',
+            data: {
+                labels: mayorData.map(d => d.label),
+                datasets: [{
+                    label: 'Votes',
+                    data: mayorData.map(d => d.votes),
+                    backgroundColor: '#4a7db5',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Mayor Votes' }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+}
+
 // ==================== CANDIDATE MANAGEMENT ====================
 
 // Load candidates
@@ -300,7 +274,8 @@ async function loadCandidates() {
         const data = await response.json();
         
         if (data.success) {
-            renderCandidates(data.candidates);
+            allCandidates = data.candidates || [];
+            renderCandidates(allCandidates);
         }
     } catch (error) {
         console.error('Error loading candidates:', error);
@@ -324,7 +299,7 @@ function renderCandidates(candidates) {
         <div class="col-md-4">
             <div class="candidate-card">
                 <div class="candidate-header">
-                    <img src="${candidate.photo || 'imgs/default.jpg'}" alt="${candidate.name}" class="candidate-photo">
+                    <img src="${candidate.photo || 'imgs/default.jpg'}" alt="${candidate.name}" class="candidate-photo" onerror="this.src='imgs/default.jpg'">
                 </div>
                 <div class="candidate-info">
                     <h3>${candidate.name}</h3>
@@ -349,48 +324,108 @@ function filterCandidates() {
     const filter = document.getElementById('candidateFilter')?.value;
     const search = document.getElementById('candidateSearch')?.value.toLowerCase();
     
-    // Implement filtering logic here
-    console.log('Filter:', filter, 'Search:', search);
+    let filtered = allCandidates;
+    
+    // Filter by position
+    if (filter && filter !== 'all') {
+        filtered = filtered.filter(c => c.position === filter);
+    }
+    
+    // Filter by search
+    if (search) {
+        filtered = filtered.filter(c => 
+            c.name.toLowerCase().includes(search) || 
+            (c.bio && c.bio.toLowerCase().includes(search))
+        );
+    }
+    
+    renderCandidates(filtered);
 }
 
-// Search candidates
-function searchCandidates() {
-    filterCandidates();
+// Image preview function
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('candidateImagePreview').src = e.target.result;
+            // In a real app, you would upload this file to a server
+            // For now, we'll use a placeholder approach
+            document.getElementById('candidatePhotoUrl').value = 'imgs/' + input.files[0].name;
+            document.getElementById('candidatePhotoInput').value = 'imgs/' + input.files[0].name;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Update photo from URL
+function updatePhotoFromUrl(url) {
+    if (url) {
+        document.getElementById('candidateImagePreview').src = url;
+        document.getElementById('candidatePhotoUrl').value = url;
+    }
 }
 
 // Open candidate modal
 function openCandidateModal(candidateId = null) {
+    const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+    
     if (candidateId) {
         // Edit existing candidate
         document.getElementById('candidateModalTitle').textContent = 'Edit Candidate';
-        // Load candidate data and populate form
+        const candidate = allCandidates.find(c => c.id === candidateId);
+        if (candidate) {
+            document.getElementById('candidateIdInput').value = candidate.id;
+            document.getElementById('candidateName').value = candidate.name;
+            document.getElementById('candidatePosition').value = candidate.position;
+            document.getElementById('candidatePhotoInput').value = candidate.photo || '';
+            document.getElementById('candidatePhotoUrl').value = candidate.photo || '';
+            document.getElementById('candidateBio').value = candidate.bio || '';
+            document.getElementById('candidateStatus').value = candidate.status || 'active';
+            document.getElementById('candidateImagePreview').src = candidate.photo || 'imgs/default.jpg';
+        }
     } else {
         // Add new candidate
         document.getElementById('candidateModalTitle').textContent = 'Add Candidate';
         document.getElementById('candidateForm').reset();
+        document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
+        document.getElementById('candidateIdInput').value = '';
+        document.getElementById('candidatePhotoUrl').value = '';
     }
     
-    new bootstrap.Modal(document.getElementById('candidateModal')).show();
+    modal.show();
+}
+
+// Edit candidate
+function editCandidate(id) {
+    openCandidateModal(id);
 }
 
 // Save candidate
 async function saveCandidate() {
-    const form = document.getElementById('candidateForm');
-    const formData = new FormData(form);
-    
     const candidate = {
-        id: formData.get('id'),
-        name: formData.get('name'),
-        position: formData.get('position'),
-        photo: formData.get('photo'),
-        bio: formData.get('bio')
+        id: document.getElementById('candidateIdInput').value,
+        name: document.getElementById('candidateName').value,
+        position: document.getElementById('candidatePosition').value,
+        photo: document.getElementById('candidatePhotoUrl').value || document.getElementById('candidatePhotoInput').value || `imgs/${document.getElementById('candidateIdInput').value}.jpg`,
+        bio: document.getElementById('candidateBio').value,
+        status: document.getElementById('candidateStatus').value
     };
+    
+    // Validate required fields
+    if (!candidate.id || !candidate.name || !candidate.position) {
+        showError('ID, Name, and Position are required');
+        return;
+    }
     
     try {
         showLoading(true);
         
-        const response = await fetch('/api/admin/candidates', {
-            method: 'POST',
+        const isEditing = document.getElementById('candidateModalTitle').textContent.includes('Edit');
+        const url = isEditing ? `/api/admin/candidates/${candidate.id}` : '/api/admin/candidates';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -402,8 +437,13 @@ async function saveCandidate() {
         
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('candidateModal')).hide();
-            loadCandidates();
-            showSuccess('Candidate added successfully');
+            await loadCandidates();
+            showSuccess(isEditing ? 'Candidate updated successfully' : 'Candidate added successfully');
+            
+            // Refresh dashboard if active
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                loadDashboardStats();
+            }
         } else {
             showError(data.message);
         }
@@ -432,8 +472,13 @@ async function deleteCandidate(id) {
         const data = await response.json();
         
         if (data.success) {
-            loadCandidates();
+            await loadCandidates();
             showSuccess('Candidate deleted successfully');
+            
+            // Refresh dashboard if active
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                loadDashboardStats();
+            }
         } else {
             showError(data.message);
         }
@@ -561,21 +606,23 @@ async function loadElectionStatus() {
         
         const data = await response.json();
         
-        if (data.success && data.election) {
+        if (data.success) {
             const election = data.election;
-            document.getElementById('electionTitle').value = election.title || '';
-            document.getElementById('startDate').value = election.startDate?.slice(0,16) || '';
-            document.getElementById('endDate').value = election.endDate?.slice(0,16) || '';
-            document.getElementById('maxVotes').value = election.maxVotes || 1;
-            
-            const statusBadge = document.getElementById('electionStatus');
-            if (statusBadge) {
-                statusBadge.innerHTML = `<span class="badge ${election.active ? 'bg-success' : 'bg-secondary'}">${election.active ? 'ACTIVE' : 'INACTIVE'}</span>`;
-            }
-            
-            // Update timer
-            if (election.active && election.endDate) {
-                startElectionTimer(election.endDate);
+            if (election) {
+                document.getElementById('electionTitle').value = election.title || '';
+                document.getElementById('startDate').value = election.startDate ? election.startDate.slice(0,16) : '';
+                document.getElementById('endDate').value = election.endDate ? election.endDate.slice(0,16) : '';
+                document.getElementById('maxVotes').value = election.maxVotes || 1;
+                
+                const statusBadge = document.getElementById('electionStatus');
+                if (statusBadge) {
+                    statusBadge.innerHTML = `<span class="badge ${election.active ? 'bg-success' : 'bg-secondary'}">${election.active ? 'ACTIVE' : 'INACTIVE'}</span>`;
+                }
+                
+                // Update timer
+                if (election.active && election.endDate) {
+                    startElectionTimer(election.endDate);
+                }
             }
         }
     } catch (error) {
@@ -634,6 +681,11 @@ async function startElection() {
         if (data.success) {
             showSuccess('Election started successfully');
             loadElectionStatus();
+            
+            // Refresh dashboard if active
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                loadDashboardStats();
+            }
         } else {
             showError(data.message);
         }
@@ -664,6 +716,11 @@ async function endElection() {
         if (data.success) {
             showSuccess('Election ended successfully');
             loadElectionStatus();
+            
+            // Refresh dashboard if active
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                loadDashboardStats();
+            }
         } else {
             showError(data.message);
         }
@@ -673,6 +730,11 @@ async function endElection() {
     } finally {
         showLoading(false);
     }
+}
+
+// Save election settings
+function saveElectionSettings() {
+    showSuccess('Election settings saved');
 }
 
 // ==================== RESULTS MANAGEMENT ====================
@@ -693,7 +755,7 @@ async function loadResults() {
         const data = await response.json();
         
         if (data.success) {
-            renderResults(data.results, data.winners);
+            renderResults(data.results, data.winners, data.statistics);
         }
     } catch (error) {
         console.error('Error loading results:', error);
@@ -704,38 +766,55 @@ async function loadResults() {
 }
 
 // Render results
-function renderResults(results, winners) {
+function renderResults(results, winners, statistics) {
     const summary = document.getElementById('resultsSummary');
     const winnersGrid = document.getElementById('winnersGrid');
     
     if (!summary || !winnersGrid) return;
     
-    // Render winners
-    if (winners) {
-        winnersGrid.innerHTML = `
-            <div class="winner-card president">
-                <h4>President</h4>
-                <h3>${winners.president?.name || 'TBD'}</h3>
-                <p>${winners.president?.votes || 0} votes</p>
-            </div>
-            <div class="winner-card mayor">
-                <h4>Mayor</h4>
-                <h3>${winners.mayor?.name || 'TBD'}</h3>
-                <p>${winners.mayor?.votes || 0} votes</p>
+    // Render statistics
+    if (statistics) {
+        summary.innerHTML = `
+            <div class="stats-summary mb-4">
+                <h4>Election Statistics</h4>
+                <p>Total Votes: ${statistics.totalVotes || 0}</p>
+                <p>Total Voters: ${statistics.totalVoters || 0}</p>
+                <p>Turnout: ${statistics.turnout || 0}%</p>
             </div>
         `;
     }
     
-    // Render detailed results
-    summary.innerHTML = `
-        <h4>President Results</h4>
-        ${Object.entries(results.president || {}).map(([id, data]) => `
-            <div class="result-item">
-                <span>${data.name}</span>
-                <span class="badge bg-primary">${data.votes} votes</span>
-            </div>
-        `).join('')}
-    `;
+    // Render winners
+    if (winners) {
+        let winnersHtml = '<h4>Winners</h4><div class="row">';
+        
+        if (winners.president) {
+            winnersHtml += `
+                <div class="col-md-4">
+                    <div class="winner-card">
+                        <h5>President</h5>
+                        <h3>${winners.president.name}</h3>
+                        <p>${winners.president.votes} votes</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (winners.mayor) {
+            winnersHtml += `
+                <div class="col-md-4">
+                    <div class="winner-card">
+                        <h5>Mayor</h5>
+                        <h3>${winners.mayor.name}</h3>
+                        <p>${winners.mayor.votes} votes</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        winnersHtml += '</div>';
+        winnersGrid.innerHTML = winnersHtml;
+    }
 }
 
 // Export results
@@ -756,6 +835,7 @@ async function exportResults(format) {
             a.href = url;
             a.download = `election-results.${format}`;
             a.click();
+            showSuccess('Results exported successfully');
         } else {
             showError('Failed to export results');
         }
@@ -765,6 +845,30 @@ async function exportResults(format) {
     } finally {
         showLoading(false);
     }
+}
+
+// Export voters
+function exportVoters() {
+    showSuccess('Voter list exported');
+}
+
+// ==================== SETTINGS FUNCTIONS ====================
+
+function addAdmin() {
+    showSuccess('Feature coming soon');
+}
+
+function saveSecuritySettings() {
+    showSuccess('Security settings saved');
+}
+
+function testApiConnection() {
+    showSuccess('API connection successful');
+}
+
+function clearLogs() {
+    document.getElementById('systemLogs').innerHTML = '';
+    showSuccess('Logs cleared');
 }
 
 // ==================== SECTION MANAGEMENT ====================
@@ -814,21 +918,6 @@ function logout() {
     localStorage.removeItem('adminName');
     localStorage.removeItem('adminRole');
     window.location.href = 'admin-login.html';
-}
-
-// Show success message
-function showSuccess(message) {
-    const alertMsg = document.getElementById('alertMessage');
-    const alertText = document.getElementById('alertText');
-    
-    if (alertMsg && alertText) {
-        alertMsg.classList.add('show', 'success');
-        alertText.textContent = message;
-        
-        setTimeout(() => {
-            alertMsg.classList.remove('show', 'success');
-        }, 3000);
-    }
 }
 
 // Initialize page

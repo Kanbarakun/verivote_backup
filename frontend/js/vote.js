@@ -2,35 +2,25 @@
 
 // More robust API URL detection
 const API_URL = (function() {
-    // If deployed on Render
     if (window.location.hostname.includes('onrender.com')) {
         return 'https://verivote-backup.onrender.com';
     }
-    // Fallback 
     return '';
 })();
 
 console.log('Using API URL:', API_URL);
 
-// Candidate data - this is what populates the columns
-const candidatesData = {
-    president: [
-        { id: "p1", name: "Maria Santos", photo: "imgs/john.jpg", bio: "Leading with vision." },
-        { id: "p2", name: "Jose Reyes", photo: "imgs/jane.jpg", bio: "Focus on growth." }
-    ],
-    senators: [
-        { id: "s1", name: "Carla Villanueva", photo: "imgs/alice.jpg", bio: "Economic reform." },
-        { id: "s2", name: "Ramon Lopez", photo: "imgs/bob.jpg", bio: "Public safety." }
-    ],
-    mayor: [
-        { id: "m1", name: "Tonyo Fernandez", photo: "imgs/charlie.jpg", bio: "Urban transit." },
-        { id: "m2", name: "Elena Castillo", photo: "imgs/diana.jpg", bio: "Community focused." }
-    ]
+// Candidate data - will be populated from API
+let candidatesData = {
+    president: [],
+    senators: [],
+    mayor: []
 };
 
 let selections = { president: null, senators: null, mayor: null };
+let electionActive = false;
+let electionEndDate = null;
 
-// Custom notification function
 function showNotification(message, type = 'warning', title = 'Notification') {
     const modalEl = document.getElementById('notificationModal');
     if (!modalEl) {
@@ -99,6 +89,139 @@ async function testAPIConnection() {
     }
 }
 
+// Check if election is active
+async function checkElectionStatus() {
+    try {
+        const response = await fetch(`${API_URL}/api/vote/election-status`);
+        const data = await response.json();
+        
+        if (data.success) {
+            electionActive = data.isActive;
+            electionEndDate = data.election?.endDate || null;
+            
+            const statusBanner = document.getElementById('electionStatusBanner');
+            const submitBtn = document.getElementById('btn-submit-vote');
+            
+            if (!electionActive) {
+                // Show inactive message
+                if (!statusBanner) {
+                    const banner = document.createElement('div');
+                    banner.id = 'electionStatusBanner';
+                    banner.className = 'alert alert-warning text-center mb-4';
+                    banner.innerHTML = '<i class="fas fa-clock me-2"></i>Voting is currently closed. Please wait for the election to start.';
+                    document.querySelector('.container-fluid').insertBefore(banner, document.querySelector('.row'));
+                }
+                
+                // Disable all candidate cards
+                document.querySelectorAll('.candidate-card').forEach(card => {
+                    card.style.opacity = '0.6';
+                    card.style.pointerEvents = 'none';
+                    card.style.cursor = 'not-allowed';
+                });
+                
+                // Disable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.6';
+                    submitBtn.title = 'Voting is currently closed';
+                }
+            } else {
+                // Remove banner if exists
+                const existingBanner = document.getElementById('electionStatusBanner');
+                if (existingBanner) existingBanner.remove();
+                
+                // Enable cards
+                document.querySelectorAll('.candidate-card').forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.cursor = 'pointer';
+                });
+                
+                // Enable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.title = '';
+                }
+                
+                // Show countdown if end date exists
+                if (electionEndDate) {
+                    startElectionCountdown(electionEndDate);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking election status:', error);
+    }
+}
+
+// Start election countdown
+function startElectionCountdown(endDate) {
+    const end = new Date(endDate).getTime();
+    
+    const timerDiv = document.createElement('div');
+    timerDiv.id = 'electionTimer';
+    timerDiv.className = 'alert alert-info text-center mb-4';
+    document.querySelector('.container-fluid').insertBefore(timerDiv, document.querySelector('.row'));
+    
+    const timer = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = end - now;
+        
+        if (distance < 0) {
+            clearInterval(timer);
+            timerDiv.innerHTML = '<i class="fas fa-hourglass-end me-2"></i>Election has ended';
+            checkElectionStatus(); // Re-check status
+            return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        
+        timerDiv.innerHTML = `<i class="fas fa-hourglass-half me-2"></i>Election ends in: ${days}d ${hours}h ${minutes}m`;
+    }, 60000);
+}
+
+// Fetch candidates from backend
+async function fetchCandidates() {
+    try {
+        console.log('Fetching candidates from API...');
+        const response = await fetch(`${API_URL}/api/vote/candidates`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch candidates');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            candidatesData = data.candidates;
+            console.log('Candidates loaded:', candidatesData);
+            
+            // Check if any position has no candidates
+            if (candidatesData.president.length === 0) {
+                showNotification('No president candidates available. Please contact admin.', 'warning');
+            }
+            if (candidatesData.senators.length === 0) {
+                showNotification('No senator candidates available. Please contact admin.', 'warning');
+            }
+            if (candidatesData.mayor.length === 0) {
+                showNotification('No mayor candidates available. Please contact admin.', 'warning');
+            }
+            
+            renderColumns();
+            await checkElectionStatus(); // Check status after rendering
+        } else {
+            console.error('Failed to load candidates');
+            showNotification('Failed to load candidates. Please refresh.', 'error');
+        }
+    } catch (error) {
+        console.error('Error fetching candidates:', error);
+        showNotification('Error loading candidates. Please try again.', 'error');
+    }
+}
+
 // Check if user has already voted
 async function checkStatus() {
     const email = localStorage.getItem('userEmail');
@@ -143,6 +266,14 @@ function renderColumns() {
         
         container.innerHTML = "";
         
+        if (!candidatesData[category] || candidatesData[category].length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'text-center text-muted py-4';
+            emptyMessage.innerText = 'No candidates available';
+            container.appendChild(emptyMessage);
+            return;
+        }
+        
         candidatesData[category].forEach(candidate => {
             const card = document.createElement('div');
             card.className = 'candidate-card';
@@ -151,6 +282,12 @@ function renderColumns() {
             card.dataset.category = category;
 
             card.addEventListener('click', () => {
+                // Check if election is active
+                if (!electionActive) {
+                    showNotification('Voting is currently closed.', 'warning', 'Election Closed');
+                    return;
+                }
+                
                 // Remove selected class from all cards in this category
                 container.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
@@ -158,10 +295,10 @@ function renderColumns() {
                 
                 // Update Modal Info
                 const photoEl = document.getElementById('modal-photo');
-                if(photoEl) photoEl.src = candidate.photo;
+                if(photoEl) photoEl.src = candidate.photo || 'imgs/default.jpg';
                 
                 document.getElementById('modal-name').innerText = candidate.name;
-                document.getElementById('modal-bio').innerText = candidate.bio;
+                document.getElementById('modal-bio').innerText = candidate.bio || 'No bio available';
                 
                 const modalEl = document.getElementById('manifestoModal');
                 if(modalEl) {
@@ -175,8 +312,20 @@ function renderColumns() {
 
 // Submit vote function
 document.getElementById('btn-submit-vote').addEventListener('click', async () => {
+    // Check if election is active
+    if (!electionActive) {
+        showNotification('Voting is currently closed.', 'warning', 'Election Closed');
+        return;
+    }
+    
+    // Check if all categories have selections
     if (!selections.president || !selections.senators || !selections.mayor) {
-        showNotification('Please select one candidate from each column!', 'warning', 'Incomplete Selection');
+        const missing = [];
+        if (!selections.president) missing.push('President');
+        if (!selections.senators) missing.push('Senator');
+        if (!selections.mayor) missing.push('Mayor');
+        
+        showNotification(`Please select a candidate for: ${missing.join(', ')}`, 'warning', 'Incomplete Selection');
         return;
     }
 
@@ -205,39 +354,26 @@ document.getElementById('btn-submit-vote').addEventListener('click', async () =>
         });
 
         console.log('Response status:', res.status);
+        const data = await res.json();
+
+        if (res.status === 403) {
+            if (data.message.includes('closed')) {
+                showNotification('Voting is currently closed.', 'warning', 'Election Closed');
+            } else {
+                showNotification('You have already voted.', 'warning', 'Already Voted');
+            }
+            submitBtn.innerText = "DONE VOTING";
+            submitBtn.disabled = false;
+            return;
+        }
 
         if (res.status === 404) {
-            // Try alternative endpoint without /api prefix
-            console.log('Trying alternative endpoint...');
-            const altRes = await fetch(`${API_URL}/vote/submit`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ voterEmail: email, selections })
-            });
-            
-            if (altRes.ok) {
-                const data = await altRes.json();
-                if (data.success) {
-                    showSuccess();
-                    return;
-                }
-            }
-            
             showNotification('Server route not found. Please check backend deployment.', 'error', 'Connection Error');
             submitBtn.innerText = "DONE VOTING";
             submitBtn.disabled = false;
             return;
         }
 
-        if (res.status === 403) {
-            showNotification('This email has already cast a ballot. You cannot vote twice!', 'warning', 'Already Voted');
-            submitBtn.innerText = "DONE VOTING";
-            submitBtn.disabled = false;
-            return;
-        }
-
-        const data = await res.json();
-        
         if (data.success) {
             showSuccess();
         } else {
@@ -267,12 +403,11 @@ function showSuccess() {
 }
 
 // Initialize everything when page loads
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('Vote page loaded');
-    testAPIConnection();
-    checkStatus();
-    renderColumns();
+    await testAPIConnection();
+    await checkStatus();
+    await fetchCandidates(); // This now calls checkElectionStatus after rendering
     
-    // Log the selections object to verify it's working
     console.log('Selections object initialized:', selections);
 });
