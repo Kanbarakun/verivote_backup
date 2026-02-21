@@ -286,49 +286,58 @@ async function loadCandidates() {
 }
 
 // Render candidates
-// Render candidates (FIXED)
+
+// Render candidates - FIXED
 function renderCandidates(candidates) {
     const grid = document.getElementById('candidatesGrid');
     if (!grid) return;
     
     if (!candidates || candidates.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center py-5">No candidates found. Click "Add Candidate" to create one.</div>';
+        grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No candidates found. Click "Add Candidate" to create one.</p></div>';
         return;
     }
     
-    grid.innerHTML = candidates.map(candidate => {
-        // Handle undefined values
+    let html = '';
+    candidates.forEach(candidate => {
+        // Safe defaults
+        const id = candidate.id || 'unknown';
         const name = candidate.name || 'Unknown';
         const position = candidate.position || 'unknown';
         const photo = candidate.photo || 'imgs/default.jpg';
         const bio = candidate.bio || 'No bio available';
-        const id = candidate.id || 'unknown';
         const status = candidate.status || 'active';
         
-        return `
-            <div class="col-md-4">
-                <div class="candidate-card">
-                    <div class="candidate-header">
-                        <img src="${photo}" alt="${name}" class="candidate-photo" onerror="this.src='imgs/default.jpg'">
+        html += `
+            <div class="col-md-4 mb-4">
+                <div class="card candidate-card h-100">
+                    <div class="card-header text-center pt-4" style="background: linear-gradient(135deg, #00205b, #ce1126);">
+                        <img src="${photo}" alt="${name}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid white;" onerror="this.src='imgs/default.jpg'">
                     </div>
-                    <div class="candidate-info">
-                        <h3>${name}</h3>
-                        <p class="candidate-position">${position.toUpperCase()}</p>
-                        <p class="candidate-bio">${bio}</p>
-                        <span class="badge ${status === 'active' ? 'bg-success' : 'bg-secondary'} mb-3">${status}</span>
-                        <div class="candidate-actions">
-                            <button class="btn-edit" onclick="editCandidate('${id}')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn-delete" onclick="deleteCandidate('${id}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
+                    <div class="card-body text-center">
+                        <h5 class="card-title">${name}</h5>
+                        <p class="badge bg-primary mb-2">${position.toUpperCase()}</p>
+                        <p class="card-text small">${bio}</p>
+                        <span class="badge ${status === 'active' ? 'bg-success' : 'bg-secondary'} mb-2">${status}</span>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 text-center">
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editCandidate('${id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCandidate('${id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
                     </div>
                 </div>
             </div>
         `;
-    }).join('');
+    });
+    
+    grid.innerHTML = html;
+}
+
+// Helper function for edit
+function editCandidate(id) {
+    openCandidateModal(id);
 }
 // Filter candidates
 function filterCandidates() {
@@ -377,43 +386,63 @@ function updatePhotoFromUrl(url) {
 }
 
 // Open candidate modal (FIXED)
+// Open candidate modal - COMPLETELY REWRITTEN
 function openCandidateModal(candidateId = null) {
-    const modalElement = document.getElementById('candidateModal');
-    const modal = new bootstrap.Modal(modalElement);
+    console.log('Opening modal for candidate:', candidateId);
     
-    // Reset form first
-    document.getElementById('candidateForm').reset();
-    document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
+    // Get modal element
+    const modalEl = document.getElementById('candidateModal');
+    
+    // Reset all form fields first
+    document.getElementById('candidateName').value = '';
+    document.getElementById('candidatePosition').value = '';
+    document.getElementById('candidateId').value = '';
+    document.getElementById('candidatePhoto').value = '';
+    document.getElementById('candidateBio').value = '';
+    document.getElementById('candidateStatus').value = 'active';
+    document.getElementById('previewImage').src = 'imgs/default.jpg';
     
     if (candidateId) {
-        // Edit existing candidate
-        document.getElementById('candidateModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Candidate';
+        // EDIT MODE
+        console.log('Edit mode for ID:', candidateId);
+        document.getElementById('candidateModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Candidate';
         
-        // Find candidate in allCandidates
+        // Find candidate in allCandidates array
         const candidate = allCandidates.find(c => c.id === candidateId);
+        console.log('Found candidate:', candidate);
+        
         if (candidate) {
-            document.getElementById('candidateId').value = candidate.id || '';
+            // Fill form with candidate data
             document.getElementById('candidateName').value = candidate.name || '';
             document.getElementById('candidatePosition').value = candidate.position || '';
+            document.getElementById('candidateId').value = candidate.id || '';
             document.getElementById('candidatePhoto').value = candidate.photo || '';
             document.getElementById('candidateBio').value = candidate.bio || '';
             document.getElementById('candidateStatus').value = candidate.status || 'active';
-            document.getElementById('candidateImagePreview').src = candidate.photo || 'imgs/default.jpg';
+            
+            // Update preview image
+            if (candidate.photo) {
+                document.getElementById('previewImage').src = candidate.photo;
+            }
+            
+            // Disable ID field in edit mode (optional)
+            document.getElementById('candidateId').disabled = true;
+        } else {
+            console.error('Candidate not found with ID:', candidateId);
+            showError('Candidate not found');
+            return;
         }
     } else {
-        // Add new candidate
-        document.getElementById('candidateModalTitle').innerHTML = '<i class="fas fa-user-plus me-2"></i>Add Candidate';
+        // ADD MODE
+        console.log('Add mode');
+        document.getElementById('candidateModalLabel').innerHTML = '<i class="fas fa-plus me-2"></i>Add Candidate';
+        document.getElementById('candidateId').disabled = false;
     }
     
+    // Show modal
+    const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
-
-// Edit candidate
-function editCandidate(id) {
-    openCandidateModal(id);
-}
-
-// Save candidate
 // Save candidate (FIXED)
 async function saveCandidate() {
     // Get form values with proper IDs
@@ -980,5 +1009,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminNameEl = document.getElementById('adminName');
     if (adminNameEl) {
         adminNameEl.textContent = localStorage.getItem('adminName') || 'Admin User';
+    }
+});
+
+// Photo upload preview
+document.addEventListener('DOMContentLoaded', function() {
+    const photoUpload = document.getElementById('photoUpload');
+    if (photoUpload) {
+        photoUpload.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(readerEvent) {
+                    document.getElementById('previewImage').src = readerEvent.target.result;
+                    // In a real app, you'd upload to server and get URL back
+                    document.getElementById('candidatePhoto').value = 'imgs/' + e.target.files[0].name;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
     }
 });

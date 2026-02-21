@@ -32,12 +32,11 @@ const verifyAdmin = async (req, res, next) => {
 
 // ==================== ADMIN LOGIN ====================
 
-// Admin login (separate from regular user login)
+// Admin login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        // Read admins from JSONBin
         const admins = await fileHandler.read('admins') || [];
         const admin = admins.find(a => a.email === email);
         
@@ -45,13 +44,11 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
         }
 
-        // Verify password
         const validPassword = await bcrypt.compare(password, admin.password);
         if (!validPassword) {
             return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
         }
 
-        // Create token
         const token = jwt.sign(
             { 
                 email: admin.email, 
@@ -63,7 +60,6 @@ router.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        // Log activity
         await logActivity(admin.email, 'Admin login', 'Logged into admin panel');
 
         res.json({
@@ -82,126 +78,50 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// ==================== INITIAL ADMIN SETUP ====================
-
-// Create initial admin (run this once)
-router.post('/setup', async (req, res) => {
-    try {
-        const { secretKey } = req.body;
-        
-        // Use a secret key from environment variables
-        if (secretKey !== process.env.ADMIN_SETUP_KEY) {
-            return res.status(403).json({ success: false, message: 'Unauthorized' });
-        }
-
-        const admins = await fileHandler.read('admins') || [];
-        
-        // Check if admin already exists
-        if (admins.find(a => a.email === 'admin@verivote.com')) {
-            return res.json({ success: true, message: 'Admin already exists' });
-        }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash('Admin@123', 10);
-        
-        const newAdmin = {
-            email: 'admin@verivote.com',
-            password: hashedPassword,
-            name: 'Super Admin',
-            role: 'super-admin',
-            createdAt: new Date().toISOString(),
-            createdBy: 'setup'
-        };
-
-        admins.push(newAdmin);
-        await fileHandler.write('admins', admins);
-
-        res.json({ 
-            success: true, 
-            message: 'Admin created successfully. Email: admin@verivote.com, Password: Admin@123'
-        });
-
-    } catch (error) {
-        console.error('Admin setup error:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// ==================== DASHBOARD STATS ====================
-
-// Get dashboard statistics
-router.get('/stats', verifyAdmin, async (req, res) => {
-    try {
-        // Read all data from JSONBin
-        const users = await fileHandler.read('users') || [];
-        const votes = await fileHandler.read('votes') || [];
-        const candidates = await fileHandler.read('candidates') || [];
-        
-        // Calculate statistics
-        const totalVoters = users.length;
-        const totalVotes = votes.length;
-        const turnout = totalVoters ? Math.round((totalVotes / totalVoters) * 100) : 0;
-
-        // Calculate votes per candidate
-        const results = {
-            president: {},
-            senators: {},
-            mayor: {}
-        };
-
-        votes.forEach(vote => {
-            if (vote.selections?.president) {
-                results.president[vote.selections.president] = (results.president[vote.selections.president] || 0) + 1;
-            }
-            if (vote.selections?.senators) {
-                results.senators[vote.selections.senators] = (results.senators[vote.selections.senators] || 0) + 1;
-            }
-            if (vote.selections?.mayor) {
-                results.mayor[vote.selections.mayor] = (results.mayor[vote.selections.mayor] || 0) + 1;
-            }
-        });
-
-        // Get recent activity
-        const activities = await fileHandler.read('activities') || [];
-        const recentActivity = activities
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            .slice(0, 10);
-
-        res.json({
-            success: true,
-            stats: {
-                totalVoters,
-                totalVotes,
-                turnout,
-                results,
-                recentActivity,
-                votersVoted: votes.length,
-                votersPending: totalVoters - votes.length
-            }
-        });
-
-    } catch (error) {
-        console.error('Error fetching stats:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 // ==================== CANDIDATE MANAGEMENT ====================
 
-// Get all candidates
+// GET all candidates
 router.get('/candidates', verifyAdmin, async (req, res) => {
     try {
-        const candidates = await fileHandler.read('candidates') || [];
-        res.json({ success: true, candidates });
+        console.log('Fetching all candidates...');
+        const candidates = await fileHandler.read('candidates');
+        
+        // Ensure we return an array
+        const candidatesArray = Array.isArray(candidates) ? candidates : [];
+        
+        console.log(`Found ${candidatesArray.length} candidates`);
+        res.json({ success: true, candidates: candidatesArray });
     } catch (error) {
+        console.error('Error fetching candidates:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Add new candidate
+// GET single candidate by ID
+router.get('/candidates/:id', verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const candidates = await fileHandler.read('candidates') || [];
+        const candidate = candidates.find(c => c.id === id);
+        
+        if (!candidate) {
+            return res.status(404).json({ success: false, message: 'Candidate not found' });
+        }
+        
+        res.json({ success: true, candidate });
+    } catch (error) {
+        console.error('Error fetching candidate:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// POST - Add new candidate
 router.post('/candidates', verifyAdmin, async (req, res) => {
     try {
-        const { id, name, position, photo, bio } = req.body;
+        const { id, name, position, photo, bio, status } = req.body;
+        
+        console.log('Received candidate data:', req.body);
         
         // Validate required fields
         if (!id || !name || !position) {
@@ -211,32 +131,54 @@ router.post('/candidates', verifyAdmin, async (req, res) => {
             });
         }
 
-        const candidates = await fileHandler.read('candidates') || [];
-        
-        // Check if candidate ID already exists
-        if (candidates.find(c => c.id === id)) {
+        // Validate position
+        if (!['president', 'senators', 'mayor'].includes(position)) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Candidate ID already exists' 
+                message: 'Position must be president, senators, or mayor' 
             });
         }
 
+        // Read existing candidates
+        let candidates = await fileHandler.read('candidates');
+        if (!Array.isArray(candidates)) {
+            candidates = [];
+        }
+        
+        // Check if candidate ID already exists
+        if (candidates.find(c => c && c.id === id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Candidate ID '${id}' already exists. Please use a different ID.` 
+            });
+        }
+
+        // Create new candidate
         const newCandidate = {
             id,
             name,
             position,
             photo: photo || `imgs/${id}.jpg`,
             bio: bio || `${name} - Candidate for ${position}`,
+            status: status || 'active',
             createdAt: new Date().toISOString(),
-            status: 'active'
+            createdBy: req.admin.email
         };
 
         candidates.push(newCandidate);
-        await fileHandler.write('candidates', candidates);
+        
+        // Save to JSONBin
+        const saved = await fileHandler.write('candidates', candidates);
+        
+        if (!saved) {
+            throw new Error('Failed to save to JSONBin');
+        }
         
         // Log activity
         await logActivity(req.admin.email, 'Added candidate', `${name} (${id})`);
 
+        console.log('Candidate added successfully:', newCandidate);
+        
         res.json({ 
             success: true, 
             message: 'Candidate added successfully',
@@ -249,14 +191,22 @@ router.post('/candidates', verifyAdmin, async (req, res) => {
     }
 });
 
-// Update candidate
+// PUT - Update candidate
 router.put('/candidates/:id', verifyAdmin, async (req, res) => {
     try {
-        const candidateId = req.params.id;
+        const { id } = req.params;
         const updates = req.body;
         
-        const candidates = await fileHandler.read('candidates') || [];
-        const index = candidates.findIndex(c => c.id === candidateId);
+        console.log(`Updating candidate ${id}:`, updates);
+        
+        // Read candidates
+        let candidates = await fileHandler.read('candidates');
+        if (!Array.isArray(candidates)) {
+            candidates = [];
+        }
+        
+        // Find candidate index
+        const index = candidates.findIndex(c => c && c.id === id);
         
         if (index === -1) {
             return res.status(404).json({ 
@@ -266,21 +216,32 @@ router.put('/candidates/:id', verifyAdmin, async (req, res) => {
         }
 
         // Update candidate (preserve createdAt)
-        candidates[index] = {
+        const updatedCandidate = {
             ...candidates[index],
             ...updates,
-            updatedAt: new Date().toISOString()
+            id: id, // Ensure ID doesn't change
+            updatedAt: new Date().toISOString(),
+            updatedBy: req.admin.email
         };
 
-        await fileHandler.write('candidates', candidates);
+        candidates[index] = updatedCandidate;
+        
+        // Save to JSONBin
+        const saved = await fileHandler.write('candidates', candidates);
+        
+        if (!saved) {
+            throw new Error('Failed to save to JSONBin');
+        }
         
         // Log activity
-        await logActivity(req.admin.email, 'Updated candidate', candidateId);
+        await logActivity(req.admin.email, 'Updated candidate', `${updatedCandidate.name} (${id})`);
 
+        console.log('Candidate updated successfully:', updatedCandidate);
+        
         res.json({ 
             success: true, 
             message: 'Candidate updated successfully',
-            candidate: candidates[index]
+            candidate: updatedCandidate
         });
 
     } catch (error) {
@@ -289,15 +250,24 @@ router.put('/candidates/:id', verifyAdmin, async (req, res) => {
     }
 });
 
-// Delete candidate
+// DELETE - Remove candidate
 router.delete('/candidates/:id', verifyAdmin, async (req, res) => {
     try {
-        const candidateId = req.params.id;
+        const { id } = req.params;
         
-        let candidates = await fileHandler.read('candidates') || [];
+        console.log(`Deleting candidate: ${id}`);
+        
+        // Read candidates
+        let candidates = await fileHandler.read('candidates');
+        if (!Array.isArray(candidates)) {
+            candidates = [];
+        }
+        
         const initialLength = candidates.length;
+        const deletedCandidate = candidates.find(c => c && c.id === id);
         
-        candidates = candidates.filter(c => c.id !== candidateId);
+        // Filter out the candidate
+        candidates = candidates.filter(c => c && c.id !== id);
         
         if (candidates.length === initialLength) {
             return res.status(404).json({ 
@@ -306,11 +276,20 @@ router.delete('/candidates/:id', verifyAdmin, async (req, res) => {
             });
         }
 
-        await fileHandler.write('candidates', candidates);
+        // Save to JSONBin
+        const saved = await fileHandler.write('candidates', candidates);
+        
+        if (!saved) {
+            throw new Error('Failed to save to JSONBin');
+        }
         
         // Log activity
-        await logActivity(req.admin.email, 'Deleted candidate', candidateId);
+        if (deletedCandidate) {
+            await logActivity(req.admin.email, 'Deleted candidate', `${deletedCandidate.name} (${id})`);
+        }
 
+        console.log('Candidate deleted successfully:', id);
+        
         res.json({ 
             success: true, 
             message: 'Candidate deleted successfully' 
@@ -322,14 +301,124 @@ router.delete('/candidates/:id', verifyAdmin, async (req, res) => {
     }
 });
 
+// ==================== DASHBOARD STATS ====================
+
+// Get dashboard statistics
+router.get('/stats', verifyAdmin, async (req, res) => {
+    try {
+        // Read all data
+        const users = await fileHandler.read('users') || [];
+        const votes = await fileHandler.read('votes') || [];
+        const candidates = await fileHandler.read('candidates') || [];
+        const activities = await fileHandler.read('activities') || [];
+        const elections = await fileHandler.read('elections') || [];
+        
+        // Ensure arrays
+        const usersArray = Array.isArray(users) ? users : [];
+        const votesArray = Array.isArray(votes) ? votes : [];
+        const candidatesArray = Array.isArray(candidates) ? candidates : [];
+        const activitiesArray = Array.isArray(activities) ? activities : [];
+        const electionsArray = Array.isArray(elections) ? elections : [];
+        
+        // Calculate statistics
+        const totalVoters = usersArray.length;
+        const totalVotes = votesArray.length;
+        const turnout = totalVoters ? Math.round((totalVotes / totalVoters) * 100) : 0;
+
+        // Calculate votes per candidate
+        const results = {
+            president: {},
+            senators: {},
+            mayor: {}
+        };
+
+        votesArray.forEach(vote => {
+            if (vote?.selections) {
+                if (vote.selections.president) {
+                    const presId = vote.selections.president;
+                    results.president[presId] = (results.president[presId] || 0) + 1;
+                }
+                if (vote.selections.senators) {
+                    const senId = vote.selections.senators;
+                    results.senators[senId] = (results.senators[senId] || 0) + 1;
+                }
+                if (vote.selections.mayor) {
+                    const mayorId = vote.selections.mayor;
+                    results.mayor[mayorId] = (results.mayor[mayorId] || 0) + 1;
+                }
+            }
+        });
+
+        // Enhance results with candidate names
+        const enhancedResults = {
+            president: {},
+            senators: {},
+            mayor: {}
+        };
+
+        Object.keys(results).forEach(position => {
+            Object.keys(results[position]).forEach(candidateId => {
+                const candidate = candidatesArray.find(c => c && c.id === candidateId);
+                enhancedResults[position][candidateId] = {
+                    votes: results[position][candidateId],
+                    name: candidate?.name || candidateId,
+                    photo: candidate?.photo || null
+                };
+            });
+        });
+
+        // Get recent activity
+        const recentActivity = activitiesArray
+            .sort((a, b) => new Date(b?.timestamp || 0) - new Date(a?.timestamp || 0))
+            .slice(0, 10)
+            .map(act => ({
+                action: act?.action || 'Unknown action',
+                details: act?.details || '',
+                timestamp: act?.timestamp || new Date().toISOString()
+            }));
+
+        // Check for active election
+        const hasActiveElection = electionsArray.some(e => e && e.active === true);
+
+        res.json({
+            success: true,
+            stats: {
+                totalVoters,
+                totalVotes,
+                turnout,
+                results: enhancedResults,
+                recentActivity,
+                hasActiveElection,
+                votersVoted: votesArray.length,
+                votersPending: totalVoters - votesArray.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message,
+            stats: {
+                totalVoters: 0,
+                totalVotes: 0,
+                turnout: 0,
+                results: { president: {}, senators: {}, mayor: {} },
+                recentActivity: [],
+                hasActiveElection: false,
+                votersVoted: 0,
+                votersPending: 0
+            }
+        });
+    }
+});
+
 // ==================== ELECTION MANAGEMENT ====================
 
-// Get election status (FIXED)
+// Get election status
 router.get('/election/status', verifyAdmin, async (req, res) => {
     try {
         const elections = await fileHandler.read('elections');
-        
-        // Ensure elections is an array
         const electionsArray = Array.isArray(elections) ? elections : [];
         const currentElection = electionsArray.find(e => e && e.active === true) || null;
         
@@ -349,12 +438,11 @@ router.get('/election/status', verifyAdmin, async (req, res) => {
     }
 });
 
-// Start election (FIXED)
+// Start election
 router.post('/election/start', verifyAdmin, async (req, res) => {
     try {
         const { title, startDate, endDate, maxVotes } = req.body;
         
-        // Read elections, ensure it's an array
         let elections = await fileHandler.read('elections');
         if (!Array.isArray(elections)) {
             elections = [];
@@ -382,7 +470,6 @@ router.post('/election/start', verifyAdmin, async (req, res) => {
         elections.push(newElection);
         await fileHandler.write('elections', elections);
         
-        // Log activity
         await logActivity(req.admin.email, 'Started election', newElection.title);
 
         res.json({ 
@@ -397,7 +484,7 @@ router.post('/election/start', verifyAdmin, async (req, res) => {
     }
 });
 
-// End election (FIXED)
+// End election
 router.post('/election/end', verifyAdmin, async (req, res) => {
     try {
         let elections = await fileHandler.read('elections');
@@ -432,78 +519,6 @@ router.post('/election/end', verifyAdmin, async (req, res) => {
     }
 });
 
-// Start election
-router.post('/election/start', verifyAdmin, async (req, res) => {
-    try {
-        const { title, startDate, endDate, maxVotes } = req.body;
-        
-        const elections = await fileHandler.read('elections') || [];
-        
-        // Deactivate any active elections
-        elections.forEach(e => { e.active = false; });
-        
-        const newElection = {
-            id: `election_${Date.now()}`,
-            title: title || 'General Election 2024',
-            active: true,
-            startDate: startDate || new Date().toISOString(),
-            endDate: endDate || new Date(Date.now() + 7*24*60*60*1000).toISOString(), // 7 days default
-            maxVotes: maxVotes || 1,
-            startedBy: req.admin.email,
-            startedAt: new Date().toISOString()
-        };
-
-        elections.push(newElection);
-        await fileHandler.write('elections', elections);
-        
-        // Log activity
-        await logActivity(req.admin.email, 'Started election', newElection.title);
-
-        res.json({ 
-            success: true, 
-            message: 'Election started successfully',
-            election: newElection 
-        });
-
-    } catch (error) {
-        console.error('Error starting election:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// End election
-router.post('/election/end', verifyAdmin, async (req, res) => {
-    try {
-        const elections = await fileHandler.read('elections') || [];
-        
-        let endedElection = null;
-        elections.forEach(e => {
-            if (e.active) {
-                e.active = false;
-                e.endedAt = new Date().toISOString();
-                e.endedBy = req.admin.email;
-                endedElection = e;
-            }
-        });
-
-        await fileHandler.write('elections', elections);
-        
-        if (endedElection) {
-            await logActivity(req.admin.email, 'Ended election', endedElection.title);
-        }
-
-        res.json({ 
-            success: true, 
-            message: endedElection ? 'Election ended' : 'No active election found',
-            election: endedElection
-        });
-
-    } catch (error) {
-        console.error('Error ending election:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 // ==================== VOTER MANAGEMENT ====================
 
 // Get all voters with status
@@ -512,25 +527,27 @@ router.get('/voters', verifyAdmin, async (req, res) => {
         const users = await fileHandler.read('users') || [];
         const votes = await fileHandler.read('votes') || [];
         
-        // Create a set of emails that have voted
-        const votedEmails = new Set(votes.map(v => v.voterEmail));
+        const usersArray = Array.isArray(users) ? users : [];
+        const votesArray = Array.isArray(votes) ? votes : [];
         
-        const votersWithStatus = users.map(user => ({
-            name: user.fullName || user.name || 'Unknown',
-            email: user.email,
-            registeredAt: user.registeredAt || user.createdAt,
-            hasVoted: votedEmails.has(user.email),
-            votedAt: votes.find(v => v.voterEmail === user.email)?.timestamp || null,
-            status: user.status || 'active'
+        const votedEmails = new Set(votesArray.map(v => v?.voterEmail).filter(Boolean));
+        
+        const votersWithStatus = usersArray.map(user => ({
+            name: user?.fullName || user?.name || 'Unknown',
+            email: user?.email || 'No email',
+            registeredAt: user?.registeredAt || user?.createdAt,
+            hasVoted: votedEmails.has(user?.email),
+            votedAt: votesArray.find(v => v?.voterEmail === user?.email)?.timestamp || null,
+            status: user?.status || 'active'
         }));
 
         res.json({ 
             success: true, 
             voters: votersWithStatus,
             stats: {
-                total: users.length,
-                voted: votes.length,
-                pending: users.length - votes.length
+                total: usersArray.length,
+                voted: votesArray.length,
+                pending: usersArray.length - votesArray.length
             }
         });
 
@@ -553,7 +570,8 @@ router.patch('/voters/:email/:action', verifyAdmin, async (req, res) => {
         }
 
         const users = await fileHandler.read('users') || [];
-        const userIndex = users.findIndex(u => u.email === email);
+        const usersArray = Array.isArray(users) ? users : [];
+        const userIndex = usersArray.findIndex(u => u?.email === email);
         
         if (userIndex === -1) {
             return res.status(404).json({ 
@@ -563,18 +581,17 @@ router.patch('/voters/:email/:action', verifyAdmin, async (req, res) => {
         }
 
         const newStatus = action === 'block' ? 'blocked' : 'active';
-        users[userIndex].status = newStatus;
-        users[userIndex].updatedAt = new Date().toISOString();
+        usersArray[userIndex].status = newStatus;
+        usersArray[userIndex].updatedAt = new Date().toISOString();
 
-        await fileHandler.write('users', users);
+        await fileHandler.write('users', usersArray);
         
-        // Log activity
         await logActivity(req.admin.email, `${action}ed voter`, email);
 
         res.json({ 
             success: true, 
             message: `Voter ${action}ed successfully`,
-            voter: users[userIndex]
+            voter: usersArray[userIndex]
         });
 
     } catch (error) {
@@ -592,6 +609,10 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
         const candidates = await fileHandler.read('candidates') || [];
         const users = await fileHandler.read('users') || [];
         
+        const votesArray = Array.isArray(votes) ? votes : [];
+        const candidatesArray = Array.isArray(candidates) ? candidates : [];
+        const usersArray = Array.isArray(users) ? users : [];
+        
         // Calculate results per position
         const results = {
             president: {},
@@ -599,18 +620,20 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
             mayor: {}
         };
 
-        votes.forEach(vote => {
-            if (vote.selections?.president) {
-                const id = vote.selections.president;
-                results.president[id] = (results.president[id] || 0) + 1;
-            }
-            if (vote.selections?.senators) {
-                const id = vote.selections.senators;
-                results.senators[id] = (results.senators[id] || 0) + 1;
-            }
-            if (vote.selections?.mayor) {
-                const id = vote.selections.mayor;
-                results.mayor[id] = (results.mayor[id] || 0) + 1;
+        votesArray.forEach(vote => {
+            if (vote?.selections) {
+                if (vote.selections.president) {
+                    const id = vote.selections.president;
+                    results.president[id] = (results.president[id] || 0) + 1;
+                }
+                if (vote.selections.senators) {
+                    const id = vote.selections.senators;
+                    results.senators[id] = (results.senators[id] || 0) + 1;
+                }
+                if (vote.selections.mayor) {
+                    const id = vote.selections.mayor;
+                    results.mayor[id] = (results.mayor[id] || 0) + 1;
+                }
             }
         });
 
@@ -623,7 +646,7 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
 
         Object.keys(results).forEach(position => {
             Object.keys(results[position]).forEach(candidateId => {
-                const candidate = candidates.find(c => c.id === candidateId);
+                const candidate = candidatesArray.find(c => c && c.id === candidateId);
                 enhancedResults[position][candidateId] = {
                     votes: results[position][candidateId],
                     name: candidate?.name || candidateId,
@@ -635,16 +658,15 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
         // Find winners
         const winners = {
             president: null,
-            mayor: null,
-            senators: null // For senators, might be multiple
+            mayor: null
         };
 
-        // President winner (highest votes)
+        // President winner
         if (Object.keys(results.president).length > 0) {
             const presidentWinner = Object.entries(results.president)
                 .sort((a, b) => b[1] - a[1])[0];
             if (presidentWinner) {
-                const candidate = candidates.find(c => c.id === presidentWinner[0]);
+                const candidate = candidatesArray.find(c => c && c.id === presidentWinner[0]);
                 winners.president = {
                     id: presidentWinner[0],
                     name: candidate?.name || presidentWinner[0],
@@ -658,7 +680,7 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
             const mayorWinner = Object.entries(results.mayor)
                 .sort((a, b) => b[1] - a[1])[0];
             if (mayorWinner) {
-                const candidate = candidates.find(c => c.id === mayorWinner[0]);
+                const candidate = candidatesArray.find(c => c && c.id === mayorWinner[0]);
                 winners.mayor = {
                     id: mayorWinner[0],
                     name: candidate?.name || mayorWinner[0],
@@ -672,9 +694,9 @@ router.get('/results/detailed', verifyAdmin, async (req, res) => {
             results: enhancedResults,
             winners,
             statistics: {
-                totalVotes: votes.length,
-                totalVoters: users.length,
-                turnout: users.length ? Math.round((votes.length / users.length) * 100) : 0
+                totalVotes: votesArray.length,
+                totalVoters: usersArray.length,
+                turnout: usersArray.length ? Math.round((votesArray.length / usersArray.length) * 100) : 0
             }
         });
 
@@ -690,21 +712,28 @@ router.get('/results/export', verifyAdmin, async (req, res) => {
         const votes = await fileHandler.read('votes') || [];
         const candidates = await fileHandler.read('candidates') || [];
         
+        const votesArray = Array.isArray(votes) ? votes : [];
+        const candidatesArray = Array.isArray(candidates) ? candidates : [];
+        
         // Create CSV content
         let csv = 'Candidate ID,Candidate Name,Position,Votes\n';
         
         const voteCount = {};
-        votes.forEach(vote => {
-            Object.keys(vote.selections || {}).forEach(position => {
-                const candidateId = vote.selections[position];
-                const key = `${position}_${candidateId}`;
-                voteCount[key] = (voteCount[key] || 0) + 1;
-            });
+        votesArray.forEach(vote => {
+            if (vote?.selections) {
+                Object.keys(vote.selections).forEach(position => {
+                    const candidateId = vote.selections[position];
+                    if (candidateId) {
+                        const key = `${position}_${candidateId}`;
+                        voteCount[key] = (voteCount[key] || 0) + 1;
+                    }
+                });
+            }
         });
 
         Object.keys(voteCount).forEach(key => {
             const [position, candidateId] = key.split('_');
-            const candidate = candidates.find(c => c.id === candidateId);
+            const candidate = candidatesArray.find(c => c && c.id === candidateId);
             csv += `${candidateId},${candidate?.name || candidateId},${position},${voteCount[key]}\n`;
         });
 
@@ -723,7 +752,11 @@ router.get('/results/export', verifyAdmin, async (req, res) => {
 // Log activity helper
 async function logActivity(adminEmail, action, details) {
     try {
-        const activities = await fileHandler.read('activities') || [];
+        let activities = await fileHandler.read('activities');
+        if (!Array.isArray(activities)) {
+            activities = [];
+        }
+        
         activities.push({
             admin: adminEmail,
             action,
@@ -733,7 +766,7 @@ async function logActivity(adminEmail, action, details) {
         
         // Keep only last 100 activities
         if (activities.length > 100) {
-            activities.splice(0, activities.length - 100);
+            activities = activities.slice(-100);
         }
         
         await fileHandler.write('activities', activities);
@@ -745,9 +778,13 @@ async function logActivity(adminEmail, action, details) {
 // Get activity logs
 router.get('/logs', verifyAdmin, async (req, res) => {
     try {
-        const activities = await fileHandler.read('activities') || [];
+        let activities = await fileHandler.read('activities');
+        if (!Array.isArray(activities)) {
+            activities = [];
+        }
+        
         const logs = activities
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .sort((a, b) => new Date(b?.timestamp || 0) - new Date(a?.timestamp || 0))
             .slice(0, 50);
 
         res.json({ success: true, logs });
@@ -762,12 +799,15 @@ router.get('/logs', verifyAdmin, async (req, res) => {
 // Get system settings
 router.get('/settings', verifyAdmin, async (req, res) => {
     try {
-        const settings = await fileHandler.read('settings') || {
-            electionTitle: 'Philippine General Election 2024',
-            maxVotesPerPosition: 1,
-            allowRegistration: true,
-            siteName: 'VeriVote'
-        };
+        let settings = await fileHandler.read('settings');
+        if (!settings || typeof settings !== 'object') {
+            settings = {
+                electionTitle: 'Philippine General Election 2024',
+                maxVotesPerPosition: 1,
+                allowRegistration: true,
+                siteName: 'VeriVote'
+            };
+        }
         res.json({ success: true, settings });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -783,7 +823,6 @@ router.post('/settings', verifyAdmin, async (req, res) => {
         
         await fileHandler.write('settings', newSettings);
         
-        // Log activity
         await logActivity(req.admin.email, 'Updated settings', 'System settings updated');
         
         res.json({ 
