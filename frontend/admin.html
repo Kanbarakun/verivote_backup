@@ -385,40 +385,45 @@
         </div>
     </div>
 
-    <!-- Candidate Modal (FIXED) -->
-<div class="modal fade" id="candidateModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+   <!-- Candidate Modal (FIXED with better structure) -->
+<div class="modal fade" id="candidateModal" tabindex="-1" aria-labelledby="candidateModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="candidateModalTitle">Add Candidate</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="candidateModalTitle">
+                    <i class="fas fa-user-plus me-2"></i>Add Candidate
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="candidateForm">
                     <div class="row">
-                        <div class="col-md-4 text-center">
+                        <div class="col-md-4">
                             <div class="image-upload-container">
-                                <img id="candidateImagePreview" src="imgs/default.jpg" alt="Candidate" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid #00205b; margin-bottom: 15px;">
-                                <div class="form-group">
+                                <img id="candidateImagePreview" src="imgs/default.jpg" alt="Candidate" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #00205b;">
+                                <div class="mb-2">
                                     <label for="candidatePhotoFile" class="btn btn-outline-primary">
-                                        <i class="fas fa-upload"></i> Upload Photo
+                                        <i class="fas fa-upload me-2"></i>Upload Photo
                                     </label>
                                     <input type="file" id="candidatePhotoFile" accept="image/*" style="display: none;" onchange="previewImage(this)">
                                 </div>
-                                <small class="text-muted d-block mt-2">Or enter URL below</small>
+                                <small class="text-muted d-block">Or enter URL below</small>
                             </div>
                         </div>
                         <div class="col-md-8">
-                            <!-- FIXED: Added proper name attributes and IDs -->
                             <div class="form-group mb-3">
-                                <label for="candidateName">Full Name</label>
-                                <input type="text" class="form-control" id="candidateName" name="name" required>
+                                <label for="candidateName">
+                                    <i class="fas fa-user me-2"></i>Full Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="candidateName" name="name" placeholder="Enter candidate's full name" required>
                             </div>
                             
                             <div class="form-group mb-3">
-                                <label for="candidatePosition">Position</label>
+                                <label for="candidatePosition">
+                                    <i class="fas fa-tag me-2"></i>Position <span class="text-danger">*</span>
+                                </label>
                                 <select class="form-control" id="candidatePosition" name="position" required>
-                                    <option value="">Select Position</option>
+                                    <option value="">-- Select Position --</option>
                                     <option value="president">President</option>
                                     <option value="senators">Senator</option>
                                     <option value="mayor">Mayor</option>
@@ -426,25 +431,34 @@
                             </div>
                             
                             <div class="form-group mb-3">
-                                <label for="candidateId">Candidate ID <small class="text-muted">(e.g., p1, s1, m1)</small></label>
+                                <label for="candidateId">
+                                    <i class="fas fa-id-card me-2"></i>Candidate ID <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="candidateId" name="id" placeholder="e.g., p1, s1, m1" required>
+                                <small class="text-muted">Use format: p1, p2 for President | s1, s2 for Senators | m1, m2 for Mayor</small>
                             </div>
                             
                             <div class="form-group mb-3">
-                                <label for="candidatePhoto">Photo URL</label>
+                                <label for="candidatePhoto">
+                                    <i class="fas fa-image me-2"></i>Photo URL
+                                </label>
                                 <input type="text" class="form-control" id="candidatePhoto" name="photo" placeholder="imgs/candidate.jpg" onchange="updatePhotoFromUrl(this.value)">
                             </div>
                             
                             <div class="form-group mb-3">
-                                <label for="candidateBio">Bio/Platform</label>
-                                <textarea class="form-control" id="candidateBio" name="bio" rows="3" placeholder="Enter candidate biography..."></textarea>
+                                <label for="candidateBio">
+                                    <i class="fas fa-align-left me-2"></i>Bio/Platform
+                                </label>
+                                <textarea class="form-control" id="candidateBio" name="bio" rows="3" placeholder="Enter candidate's biography, platform, or manifesto..."></textarea>
                             </div>
                             
                             <div class="form-group mb-3">
-                                <label for="candidateStatus">Status</label>
+                                <label for="candidateStatus">
+                                    <i class="fas fa-circle me-2"></i>Status
+                                </label>
                                 <select class="form-control" id="candidateStatus" name="status">
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
+                                    <option value="active">Active (Visible to voters)</option>
+                                    <option value="inactive">Inactive (Hidden from voters)</option>
                                 </select>
                             </div>
                         </div>
@@ -452,8 +466,12 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveCandidate()">Save Candidate</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveCandidate()">
+                    <i class="fas fa-save me-2"></i>Save Candidate
+                </button>
             </div>
         </div>
     </div>

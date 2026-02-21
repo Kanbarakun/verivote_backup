@@ -376,31 +376,33 @@ function updatePhotoFromUrl(url) {
     }
 }
 
-// Open candidate modal
+// Open candidate modal (FIXED)
 function openCandidateModal(candidateId = null) {
-    const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+    const modalElement = document.getElementById('candidateModal');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Reset form first
+    document.getElementById('candidateForm').reset();
+    document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
     
     if (candidateId) {
         // Edit existing candidate
-        document.getElementById('candidateModalTitle').textContent = 'Edit Candidate';
+        document.getElementById('candidateModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Candidate';
+        
+        // Find candidate in allCandidates
         const candidate = allCandidates.find(c => c.id === candidateId);
         if (candidate) {
-            document.getElementById('candidateIdInput').value = candidate.id;
-            document.getElementById('candidateName').value = candidate.name;
-            document.getElementById('candidatePosition').value = candidate.position;
-            document.getElementById('candidatePhotoInput').value = candidate.photo || '';
-            document.getElementById('candidatePhotoUrl').value = candidate.photo || '';
+            document.getElementById('candidateId').value = candidate.id || '';
+            document.getElementById('candidateName').value = candidate.name || '';
+            document.getElementById('candidatePosition').value = candidate.position || '';
+            document.getElementById('candidatePhoto').value = candidate.photo || '';
             document.getElementById('candidateBio').value = candidate.bio || '';
             document.getElementById('candidateStatus').value = candidate.status || 'active';
             document.getElementById('candidateImagePreview').src = candidate.photo || 'imgs/default.jpg';
         }
     } else {
         // Add new candidate
-        document.getElementById('candidateModalTitle').textContent = 'Add Candidate';
-        document.getElementById('candidateForm').reset();
-        document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
-        document.getElementById('candidateIdInput').value = '';
-        document.getElementById('candidatePhotoUrl').value = '';
+        document.getElementById('candidateModalTitle').innerHTML = '<i class="fas fa-user-plus me-2"></i>Add Candidate';
     }
     
     modal.show();
