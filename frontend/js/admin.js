@@ -286,39 +286,50 @@ async function loadCandidates() {
 }
 
 // Render candidates
+// Render candidates (FIXED)
 function renderCandidates(candidates) {
     const grid = document.getElementById('candidatesGrid');
     if (!grid) return;
     
     if (!candidates || candidates.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center py-5">No candidates found</div>';
+        grid.innerHTML = '<div class="col-12 text-center py-5">No candidates found. Click "Add Candidate" to create one.</div>';
         return;
     }
     
-    grid.innerHTML = candidates.map(candidate => `
-        <div class="col-md-4">
-            <div class="candidate-card">
-                <div class="candidate-header">
-                    <img src="${candidate.photo || 'imgs/default.jpg'}" alt="${candidate.name}" class="candidate-photo" onerror="this.src='imgs/default.jpg'">
-                </div>
-                <div class="candidate-info">
-                    <h3>${candidate.name}</h3>
-                    <p class="candidate-position">${candidate.position.toUpperCase()}</p>
-                    <p class="candidate-bio">${candidate.bio || 'No bio available'}</p>
-                    <div class="candidate-actions">
-                        <button class="btn-edit" onclick="editCandidate('${candidate.id}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn-delete" onclick="deleteCandidate('${candidate.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
+    grid.innerHTML = candidates.map(candidate => {
+        // Handle undefined values
+        const name = candidate.name || 'Unknown';
+        const position = candidate.position || 'unknown';
+        const photo = candidate.photo || 'imgs/default.jpg';
+        const bio = candidate.bio || 'No bio available';
+        const id = candidate.id || 'unknown';
+        const status = candidate.status || 'active';
+        
+        return `
+            <div class="col-md-4">
+                <div class="candidate-card">
+                    <div class="candidate-header">
+                        <img src="${photo}" alt="${name}" class="candidate-photo" onerror="this.src='imgs/default.jpg'">
+                    </div>
+                    <div class="candidate-info">
+                        <h3>${name}</h3>
+                        <p class="candidate-position">${position.toUpperCase()}</p>
+                        <p class="candidate-bio">${bio}</p>
+                        <span class="badge ${status === 'active' ? 'bg-success' : 'bg-secondary'} mb-3">${status}</span>
+                        <div class="candidate-actions">
+                            <button class="btn-edit" onclick="editCandidate('${id}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn-delete" onclick="deleteCandidate('${id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
-
 // Filter candidates
 function filterCandidates() {
     const filter = document.getElementById('candidateFilter')?.value;
@@ -401,19 +412,27 @@ function editCandidate(id) {
 }
 
 // Save candidate
+// Save candidate (FIXED)
 async function saveCandidate() {
+    // Get form values with proper IDs
     const candidate = {
-        id: document.getElementById('candidateIdInput').value,
-        name: document.getElementById('candidateName').value,
-        position: document.getElementById('candidatePosition').value,
-        photo: document.getElementById('candidatePhotoUrl').value || document.getElementById('candidatePhotoInput').value || `imgs/${document.getElementById('candidateIdInput').value}.jpg`,
-        bio: document.getElementById('candidateBio').value,
-        status: document.getElementById('candidateStatus').value
+        id: document.getElementById('candidateId')?.value,
+        name: document.getElementById('candidateName')?.value,
+        position: document.getElementById('candidatePosition')?.value,
+        photo: document.getElementById('candidatePhoto')?.value || `imgs/${document.getElementById('candidateId')?.value}.jpg`,
+        bio: document.getElementById('candidateBio')?.value || '',
+        status: document.getElementById('candidateStatus')?.value || 'active'
     };
     
     // Validate required fields
     if (!candidate.id || !candidate.name || !candidate.position) {
         showError('ID, Name, and Position are required');
+        return;
+    }
+    
+    // Validate position
+    if (!['president', 'senators', 'mayor'].includes(candidate.position)) {
+        showError('Please select a valid position');
         return;
     }
     
@@ -423,6 +442,8 @@ async function saveCandidate() {
         const isEditing = document.getElementById('candidateModalTitle').textContent.includes('Edit');
         const url = isEditing ? `/api/admin/candidates/${candidate.id}` : '/api/admin/candidates';
         const method = isEditing ? 'PUT' : 'POST';
+        
+        console.log('Saving candidate:', candidate);
         
         const response = await fetch(url, {
             method: method,
@@ -436,7 +457,15 @@ async function saveCandidate() {
         const data = await response.json();
         
         if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('candidateModal')).hide();
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('candidateModal'));
+            if (modal) modal.hide();
+            
+            // Reset form
+            document.getElementById('candidateForm').reset();
+            document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
+            
+            // Reload candidates
             await loadCandidates();
             showSuccess(isEditing ? 'Candidate updated successfully' : 'Candidate added successfully');
             
@@ -445,16 +474,15 @@ async function saveCandidate() {
                 loadDashboardStats();
             }
         } else {
-            showError(data.message);
+            showError(data.message || 'Failed to save candidate');
         }
     } catch (error) {
         console.error('Error saving candidate:', error);
-        showError('Failed to save candidate');
+        showError('Failed to save candidate: ' + error.message);
     } finally {
         showLoading(false);
     }
 }
-
 // Delete candidate
 async function deleteCandidate(id) {
     if (!confirm('Are you sure you want to delete this candidate?')) return;
@@ -593,7 +621,7 @@ async function toggleVoterStatus(email, currentStatus) {
 
 // ==================== ELECTION MANAGEMENT ====================
 
-// Load election status
+// Load election status (FIXED)
 async function loadElectionStatus() {
     if (!checkAdminAuth()) return;
     
@@ -609,7 +637,7 @@ async function loadElectionStatus() {
         if (data.success) {
             const election = data.election;
             if (election) {
-                document.getElementById('electionTitle').value = election.title || '';
+                document.getElementById('electionTitle').value = election.title || 'Philippine General Election 2024';
                 document.getElementById('startDate').value = election.startDate ? election.startDate.slice(0,16) : '';
                 document.getElementById('endDate').value = election.endDate ? election.endDate.slice(0,16) : '';
                 document.getElementById('maxVotes').value = election.maxVotes || 1;
@@ -622,11 +650,18 @@ async function loadElectionStatus() {
                 // Update timer
                 if (election.active && election.endDate) {
                     startElectionTimer(election.endDate);
+                } else {
+                    document.getElementById('electionTimer').innerHTML = '';
                 }
+            } else {
+                // No election found
+                document.getElementById('electionStatus').innerHTML = '<span class="badge bg-secondary">NO ELECTION</span>';
+                document.getElementById('electionTimer').innerHTML = '';
             }
         }
     } catch (error) {
         console.error('Error loading election status:', error);
+        showError('Failed to load election status');
     }
 }
 

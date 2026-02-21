@@ -324,11 +324,14 @@ router.delete('/candidates/:id', verifyAdmin, async (req, res) => {
 
 // ==================== ELECTION MANAGEMENT ====================
 
-// Get election status
+// Get election status (FIXED)
 router.get('/election/status', verifyAdmin, async (req, res) => {
     try {
-        const elections = await fileHandler.read('elections') || [];
-        const currentElection = elections.find(e => e.active === true) || null;
+        const elections = await fileHandler.read('elections');
+        
+        // Ensure elections is an array
+        const electionsArray = Array.isArray(elections) ? elections : [];
+        const currentElection = electionsArray.find(e => e && e.active === true) || null;
         
         res.json({ 
             success: true, 
@@ -336,6 +339,95 @@ router.get('/election/status', verifyAdmin, async (req, res) => {
             hasActive: !!currentElection
         });
     } catch (error) {
+        console.error('Error fetching election status:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message,
+            election: null,
+            hasActive: false 
+        });
+    }
+});
+
+// Start election (FIXED)
+router.post('/election/start', verifyAdmin, async (req, res) => {
+    try {
+        const { title, startDate, endDate, maxVotes } = req.body;
+        
+        // Read elections, ensure it's an array
+        let elections = await fileHandler.read('elections');
+        if (!Array.isArray(elections)) {
+            elections = [];
+        }
+        
+        // Deactivate any active elections
+        elections = elections.map(e => {
+            if (e && e.active) {
+                return { ...e, active: false };
+            }
+            return e;
+        });
+        
+        const newElection = {
+            id: `election_${Date.now()}`,
+            title: title || 'General Election 2024',
+            active: true,
+            startDate: startDate || new Date().toISOString(),
+            endDate: endDate || new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+            maxVotes: maxVotes || 1,
+            startedBy: req.admin.email,
+            startedAt: new Date().toISOString()
+        };
+
+        elections.push(newElection);
+        await fileHandler.write('elections', elections);
+        
+        // Log activity
+        await logActivity(req.admin.email, 'Started election', newElection.title);
+
+        res.json({ 
+            success: true, 
+            message: 'Election started successfully',
+            election: newElection 
+        });
+
+    } catch (error) {
+        console.error('Error starting election:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// End election (FIXED)
+router.post('/election/end', verifyAdmin, async (req, res) => {
+    try {
+        let elections = await fileHandler.read('elections');
+        if (!Array.isArray(elections)) {
+            elections = [];
+        }
+        
+        let endedElection = null;
+        elections = elections.map(e => {
+            if (e && e.active) {
+                endedElection = { ...e, active: false, endedAt: new Date().toISOString(), endedBy: req.admin.email };
+                return endedElection;
+            }
+            return e;
+        });
+
+        await fileHandler.write('elections', elections);
+        
+        if (endedElection) {
+            await logActivity(req.admin.email, 'Ended election', endedElection.title);
+        }
+
+        res.json({ 
+            success: true, 
+            message: endedElection ? 'Election ended' : 'No active election found',
+            election: endedElection
+        });
+
+    } catch (error) {
+        console.error('Error ending election:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
