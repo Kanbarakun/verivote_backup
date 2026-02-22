@@ -74,6 +74,16 @@ async function loadDashboardStats() {
             }
         });
         
+        if (response.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -144,7 +154,7 @@ function getActivityIcon(action) {
     return 'fa-history';
 }
 
-// Render charts (FIXED: Separate charts for each position)
+// Render charts
 function renderCharts(results) {
     if (!results) return;
     
@@ -271,6 +281,15 @@ async function loadCandidates() {
             }
         });
         
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -286,8 +305,6 @@ async function loadCandidates() {
 }
 
 // Render candidates
-
-// Render candidates - FIXED
 function renderCandidates(candidates) {
     const grid = document.getElementById('candidatesGrid');
     if (!grid) return;
@@ -335,10 +352,6 @@ function renderCandidates(candidates) {
     grid.innerHTML = html;
 }
 
-// Helper function for edit
-function editCandidate(id) {
-    openCandidateModal(id);
-}
 // Filter candidates
 function filterCandidates() {
     const filter = document.getElementById('candidateFilter')?.value;
@@ -362,31 +375,7 @@ function filterCandidates() {
     renderCandidates(filtered);
 }
 
-// Image preview function
-function previewImage(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('candidateImagePreview').src = e.target.result;
-            // In a real app, you would upload this file to a server
-            // For now, we'll use a placeholder approach
-            document.getElementById('candidatePhotoUrl').value = 'imgs/' + input.files[0].name;
-            document.getElementById('candidatePhotoInput').value = 'imgs/' + input.files[0].name;
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-// Update photo from URL
-function updatePhotoFromUrl(url) {
-    if (url) {
-        document.getElementById('candidateImagePreview').src = url;
-        document.getElementById('candidatePhotoUrl').value = url;
-    }
-}
-
 // Open candidate modal (FIXED)
-// Open candidate modal - COMPLETELY REWRITTEN
 function openCandidateModal(candidateId = null) {
     console.log('Opening modal for candidate:', candidateId);
     
@@ -401,6 +390,9 @@ function openCandidateModal(candidateId = null) {
     document.getElementById('candidateBio').value = '';
     document.getElementById('candidateStatus').value = 'active';
     document.getElementById('previewImage').src = 'imgs/default.jpg';
+    
+    // Enable ID field (in case it was disabled from previous edit)
+    document.getElementById('candidateId').disabled = false;
     
     if (candidateId) {
         // EDIT MODE
@@ -425,7 +417,7 @@ function openCandidateModal(candidateId = null) {
                 document.getElementById('previewImage').src = candidate.photo;
             }
             
-            // Disable ID field in edit mode (optional)
+            // Disable ID field in edit mode (optional - remove if you want to allow ID changes)
             document.getElementById('candidateId').disabled = true;
         } else {
             console.error('Candidate not found with ID:', candidateId);
@@ -436,28 +428,41 @@ function openCandidateModal(candidateId = null) {
         // ADD MODE
         console.log('Add mode');
         document.getElementById('candidateModalLabel').innerHTML = '<i class="fas fa-plus me-2"></i>Add Candidate';
-        document.getElementById('candidateId').disabled = false;
     }
     
     // Show modal
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
+
+// Edit candidate helper
+function editCandidate(id) {
+    openCandidateModal(id);
+}
+
 // Save candidate (FIXED)
 async function saveCandidate() {
     // Get form values with proper IDs
     const candidate = {
-        id: document.getElementById('candidateId')?.value,
-        name: document.getElementById('candidateName')?.value,
+        id: document.getElementById('candidateId')?.value?.trim(),
+        name: document.getElementById('candidateName')?.value?.trim(),
         position: document.getElementById('candidatePosition')?.value,
-        photo: document.getElementById('candidatePhoto')?.value || `imgs/${document.getElementById('candidateId')?.value}.jpg`,
-        bio: document.getElementById('candidateBio')?.value || '',
+        photo: document.getElementById('candidatePhoto')?.value?.trim() || `imgs/${document.getElementById('candidateId')?.value}.jpg`,
+        bio: document.getElementById('candidateBio')?.value?.trim() || '',
         status: document.getElementById('candidateStatus')?.value || 'active'
     };
     
     // Validate required fields
-    if (!candidate.id || !candidate.name || !candidate.position) {
-        showError('ID, Name, and Position are required');
+    if (!candidate.id) {
+        showError('Candidate ID is required');
+        return;
+    }
+    if (!candidate.name) {
+        showError('Candidate name is required');
+        return;
+    }
+    if (!candidate.position) {
+        showError('Please select a position');
         return;
     }
     
@@ -470,11 +475,17 @@ async function saveCandidate() {
     try {
         showLoading(true);
         
-        const isEditing = document.getElementById('candidateModalTitle').textContent.includes('Edit');
+        // Check if we're in edit mode by looking at modal title
+        const modalTitle = document.getElementById('candidateModalLabel').textContent;
+        const isEditing = modalTitle.includes('Edit');
+        
         const url = isEditing ? `/api/admin/candidates/${candidate.id}` : '/api/admin/candidates';
         const method = isEditing ? 'PUT' : 'POST';
         
         console.log('Saving candidate:', candidate);
+        console.log('Mode:', isEditing ? 'Edit' : 'Add');
+        console.log('URL:', url);
+        console.log('Method:', method);
         
         const response = await fetch(url, {
             method: method,
@@ -485,6 +496,15 @@ async function saveCandidate() {
             body: JSON.stringify(candidate)
         });
         
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -493,8 +513,14 @@ async function saveCandidate() {
             if (modal) modal.hide();
             
             // Reset form
-            document.getElementById('candidateForm').reset();
-            document.getElementById('candidateImagePreview').src = 'imgs/default.jpg';
+            document.getElementById('candidateName').value = '';
+            document.getElementById('candidatePosition').value = '';
+            document.getElementById('candidateId').value = '';
+            document.getElementById('candidatePhoto').value = '';
+            document.getElementById('candidateBio').value = '';
+            document.getElementById('candidateStatus').value = 'active';
+            document.getElementById('previewImage').src = 'imgs/default.jpg';
+            document.getElementById('candidateId').disabled = false;
             
             // Reload candidates
             await loadCandidates();
@@ -514,9 +540,10 @@ async function saveCandidate() {
         showLoading(false);
     }
 }
+
 // Delete candidate
 async function deleteCandidate(id) {
-    if (!confirm('Are you sure you want to delete this candidate?')) return;
+    if (!confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) return;
     
     try {
         showLoading(true);
@@ -527,6 +554,15 @@ async function deleteCandidate(id) {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
         });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
         
         const data = await response.json();
         
@@ -563,6 +599,15 @@ async function loadVoters() {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
         });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
         
         const data = await response.json();
         
@@ -634,6 +679,15 @@ async function toggleVoterStatus(email, currentStatus) {
             }
         });
         
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -652,7 +706,7 @@ async function toggleVoterStatus(email, currentStatus) {
 
 // ==================== ELECTION MANAGEMENT ====================
 
-// Load election status (FIXED)
+// Load election status
 async function loadElectionStatus() {
     if (!checkAdminAuth()) return;
     
@@ -663,14 +717,32 @@ async function loadElectionStatus() {
             }
         });
         
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
             const election = data.election;
             if (election) {
                 document.getElementById('electionTitle').value = election.title || 'Philippine General Election 2024';
-                document.getElementById('startDate').value = election.startDate ? election.startDate.slice(0,16) : '';
-                document.getElementById('endDate').value = election.endDate ? election.endDate.slice(0,16) : '';
+                
+                // Format dates for datetime-local input
+                if (election.startDate) {
+                    const startDate = new Date(election.startDate);
+                    document.getElementById('startDate').value = startDate.toISOString().slice(0,16);
+                }
+                if (election.endDate) {
+                    const endDate = new Date(election.endDate);
+                    document.getElementById('endDate').value = endDate.toISOString().slice(0,16);
+                }
+                
                 document.getElementById('maxVotes').value = election.maxVotes || 1;
                 
                 const statusBadge = document.getElementById('electionStatus');
@@ -709,7 +781,7 @@ function startElectionTimer(endDate) {
         
         if (distance < 0) {
             clearInterval(timer);
-            timerEl.innerHTML = 'Election ended';
+            timerEl.innerHTML = '<span class="text-danger">Election ended</span>';
             return;
         }
         
@@ -730,6 +802,12 @@ async function startElection() {
         maxVotes: parseInt(document.getElementById('maxVotes').value)
     };
     
+    // Validate dates
+    if (!electionData.startDate || !electionData.endDate) {
+        showError('Please set both start and end dates');
+        return;
+    }
+    
     try {
         showLoading(true);
         
@@ -741,6 +819,15 @@ async function startElection() {
             },
             body: JSON.stringify(electionData)
         });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
         
         const data = await response.json();
         
@@ -776,6 +863,15 @@ async function endElection() {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
         });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
         
         const data = await response.json();
         
@@ -818,6 +914,15 @@ async function loadResults() {
             }
         });
         
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -841,11 +946,11 @@ function renderResults(results, winners, statistics) {
     // Render statistics
     if (statistics) {
         summary.innerHTML = `
-            <div class="stats-summary mb-4">
+            <div class="stats-summary mb-4 p-3 bg-light rounded">
                 <h4>Election Statistics</h4>
-                <p>Total Votes: ${statistics.totalVotes || 0}</p>
-                <p>Total Voters: ${statistics.totalVoters || 0}</p>
-                <p>Turnout: ${statistics.turnout || 0}%</p>
+                <p><strong>Total Votes:</strong> ${statistics.totalVotes || 0}</p>
+                <p><strong>Total Voters:</strong> ${statistics.totalVoters || 0}</p>
+                <p><strong>Turnout:</strong> ${statistics.turnout || 0}%</p>
             </div>
         `;
     }
@@ -856,11 +961,13 @@ function renderResults(results, winners, statistics) {
         
         if (winners.president) {
             winnersHtml += `
-                <div class="col-md-4">
-                    <div class="winner-card">
-                        <h5>President</h5>
-                        <h3>${winners.president.name}</h3>
-                        <p>${winners.president.votes} votes</p>
+                <div class="col-md-6 mb-3">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">President</h5>
+                            <h3>${winners.president.name}</h3>
+                            <p class="card-text">${winners.president.votes} votes</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -868,11 +975,13 @@ function renderResults(results, winners, statistics) {
         
         if (winners.mayor) {
             winnersHtml += `
-                <div class="col-md-4">
-                    <div class="winner-card">
-                        <h5>Mayor</h5>
-                        <h3>${winners.mayor.name}</h3>
-                        <p>${winners.mayor.votes} votes</p>
+                <div class="col-md-6 mb-3">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">Mayor</h5>
+                            <h3>${winners.mayor.name}</h3>
+                            <p class="card-text">${winners.mayor.votes} votes</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -893,6 +1002,15 @@ async function exportResults(format) {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
         });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminRole');
+            window.location.href = 'admin-login.html';
+            return;
+        }
         
         if (response.ok) {
             const blob = await response.blob();
@@ -915,13 +1033,13 @@ async function exportResults(format) {
 
 // Export voters
 function exportVoters() {
-    showSuccess('Voter list exported');
+    showSuccess('Voter list exported (feature coming soon)');
 }
 
 // ==================== SETTINGS FUNCTIONS ====================
 
 function addAdmin() {
-    showSuccess('Feature coming soon');
+    showSuccess('Add admin feature coming soon');
 }
 
 function saveSecuritySettings() {
@@ -986,6 +1104,26 @@ function logout() {
     window.location.href = 'admin-login.html';
 }
 
+// ==================== PHOTO UPLOAD PREVIEW ====================
+
+// Initialize photo upload preview
+document.addEventListener('DOMContentLoaded', function() {
+    const photoUpload = document.getElementById('photoUpload');
+    if (photoUpload) {
+        photoUpload.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(readerEvent) {
+                    document.getElementById('previewImage').src = readerEvent.target.result;
+                    // Set a placeholder filename (in production, you'd upload to server)
+                    document.getElementById('candidatePhoto').value = 'imgs/' + e.target.files[0].name;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    }
+});
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     // Check authentication first
@@ -1009,23 +1147,5 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminNameEl = document.getElementById('adminName');
     if (adminNameEl) {
         adminNameEl.textContent = localStorage.getItem('adminName') || 'Admin User';
-    }
-});
-
-// Photo upload preview
-document.addEventListener('DOMContentLoaded', function() {
-    const photoUpload = document.getElementById('photoUpload');
-    if (photoUpload) {
-        photoUpload.addEventListener('change', function(e) {
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(readerEvent) {
-                    document.getElementById('previewImage').src = readerEvent.target.result;
-                    // In a real app, you'd upload to server and get URL back
-                    document.getElementById('candidatePhoto').value = 'imgs/' + e.target.files[0].name;
-                }
-                reader.readAsDataURL(e.target.files[0]);
-            }
-        });
     }
 });
