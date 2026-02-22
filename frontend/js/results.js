@@ -1,45 +1,38 @@
 document.addEventListener('DOMContentLoaded', fetchResults);
 
-// Candidate name mappings - UPDATE THESE with your actual candidate names!
-const candidateNames = {
-    // President candidates (update with actual names)
-    'p1': 'Maria Santos',
-    'p2': 'Jose Reyes',
-    'p3': 'Ana Gonzales',
-    'p4': 'Miguel Cruz',
-    
-    // Senator candidates (update with actual names)
-    's1': 'Carla Villanueva',
-    's2': 'Ramon Lopez',
-    's3': 'Luzviminda Garcia',
-    's4': 'Pedro Marcos',
-    's5': 'Sofia Ortega',
-    's6': 'Ricardo Ramos',
-    
-    // Mayor candidates (update with actual names)
-    'm1': 'Tonyo Fernandez',
-    'm2': 'Elena Castillo',
-    'm3': 'Benito Aquino',
-    'm4': 'Lorna Santos'
-};
+// API URL detection
+const API_URL = (function() {
+    if (window.location.hostname.includes('onrender.com')) {
+        return 'https://verivote-backup.onrender.com';
+    }
+    return '';
+})();
+
+// Store candidate names for reference
+let candidateNames = {};
 
 // Default registered voters count - UPDATE THIS with your actual total registered voters
-const TOTAL_REGISTERED_VOTERS = 4; // Change this to your actual number
+const TOTAL_REGISTERED_VOTERS = 1000; // Change this to your actual number
 const TOTAL_PRECINCTS = 180; // Change this to your actual number of precincts
 
+// Fetch candidates first to get names, then fetch results
 async function fetchResults() {
     try {
-        const response = await fetch('https://verivote-backup.onrender.com/api/vote/results');
+        // First, fetch candidates to get names
+        await fetchCandidates();
+        
+        // Then fetch results
+        const response = await fetch(`${API_URL}/api/vote/results`);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('API Response:', data); // Debug log
+        console.log('Results API Response:', data); // Debug log
 
         if (data.success && data.results) {
-            // Render charts
+            // Render charts with the results data
             renderChart('chart-president', data.results.president || {}, 'President');
             renderChart('chart-senators', data.results.senators || {}, 'Senators');
             renderChart('chart-mayor', data.results.mayor || {}, 'Mayor');
@@ -56,15 +49,57 @@ async function fetchResults() {
     }
 }
 
+// Fetch candidates to get names
+async function fetchCandidates() {
+    try {
+        const response = await fetch(`${API_URL}/api/vote/candidates`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch candidates');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Build a map of candidate IDs to names
+            const allCandidates = [
+                ...(data.candidates.president || []),
+                ...(data.candidates.senators || []),
+                ...(data.candidates.mayor || [])
+            ];
+            
+            allCandidates.forEach(candidate => {
+                if (candidate && candidate.id) {
+                    candidateNames[candidate.id] = candidate.name;
+                }
+            });
+            
+            console.log('Candidate names loaded:', candidateNames);
+        }
+    } catch (error) {
+        console.error('Error fetching candidates:', error);
+        // Fallback to using IDs as names
+    }
+}
+
 function renderChart(canvasId, votesObj, title) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) {
+        console.error(`Canvas ${canvasId} not found`);
+        return;
+    }
+    
+    const ctx2d = ctx.getContext('2d');
     
     // Convert object into arrays for Chart.js
     const candidateIds = Object.keys(votesObj || {});
     const dataPoints = Object.values(votesObj || {});
     
-    // Map IDs to names (if available), otherwise use IDs
-    const labels = candidateIds.map(id => candidateNames[id] || id.toUpperCase());
+    // Map IDs to names from our candidateNames object
+    const labels = candidateIds.map(id => {
+        // Try to get name from our map, otherwise use ID
+        return candidateNames[id] || id;
+    });
 
     // Destroy existing chart if it exists
     const existingChart = Chart.getChart(canvasId);
@@ -72,7 +107,35 @@ function renderChart(canvasId, votesObj, title) {
         existingChart.destroy();
     }
 
-    new Chart(ctx, {
+    // If no data, show empty chart with message
+    if (candidateIds.length === 0) {
+        new Chart(ctx2d, {
+            type: 'bar',
+            data: {
+                labels: ['No Votes Yet'],
+                datasets: [{
+                    label: 'Number of Votes',
+                    data: [0],
+                    backgroundColor: ['#cccccc'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { 
+                        display: true, 
+                        text: `${title} - No votes recorded` 
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    new Chart(ctx2d, {
         type: 'bar',
         data: {
             labels: labels,
@@ -133,6 +196,10 @@ function renderChart(canvasId, votesObj, title) {
                             return `${context.dataset.label}: ${context.raw}`;
                         }
                     }
+                },
+                title: {
+                    display: true,
+                    text: title
                 }
             },
             layout: {
@@ -170,11 +237,10 @@ function updateLiveStatistics(results) {
     }
     
     // Calculate voter turnout percentage
-    const voterTurnout = Math.round((totalVotes / TOTAL_REGISTERED_VOTERS) * 100);
+    const voterTurnout = Math.min(100, Math.round((totalVotes / TOTAL_REGISTERED_VOTERS) * 100));
     
-    // Simulate precincts reporting (you can modify this based on your actual data)
-    // For now, we'll assume precincts are reporting proportionally to votes cast
-    const reportedPrecincts = Math.round((totalVotes / TOTAL_REGISTERED_VOTERS) * TOTAL_PRECINCTS);
+    // Calculate precincts reporting (simulated based on votes)
+    const reportedPrecincts = Math.min(TOTAL_PRECINCTS, Math.round((totalVotes / TOTAL_REGISTERED_VOTERS) * TOTAL_PRECINCTS));
     
     // Update DOM elements
     const totalVotersEl = document.getElementById('total-voters');
@@ -236,9 +302,13 @@ function showErrorMessage() {
     });
     
     // Update stats with error message
-    document.getElementById('total-voters').textContent = '--';
-    document.getElementById('voter-turnout').textContent = '--%';
-    document.getElementById('precincts').textContent = '--';
+    const totalVotersEl = document.getElementById('total-voters');
+    const turnoutEl = document.getElementById('voter-turnout');
+    const precinctsEl = document.getElementById('precincts');
+    
+    if (totalVotersEl) totalVotersEl.textContent = '--';
+    if (turnoutEl) turnoutEl.textContent = '--%';
+    if (precinctsEl) precinctsEl.textContent = '--';
 }
 
 // Refresh data every 30 seconds

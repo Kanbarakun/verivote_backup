@@ -72,7 +72,7 @@
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-number" id="total-voters">0</div>
-                    <div class="stat-label">Total Voters</div>
+                    <div class="stat-label">Total Votes Cast</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="voter-turnout">0%</div>
@@ -82,6 +82,22 @@
                     <div class="stat-number" id="precincts">0</div>
                     <div class="stat-label">Precincts Reporting</div>
                 </div>
+            </div>
+
+            <!-- ADD THIS: Leading Candidate Display -->
+            <div class="text-center mt-4">
+                <div class="leading-candidate-card">
+                    <i class="fas fa-crown text-warning me-2"></i>
+                    <span id="leading-candidate">Loading...</span>
+                    <span class="text-white-50"> is currently leading</span>
+                </div>
+            </div>
+
+            <!-- ADD THIS: Last Updated -->
+            <div class="text-center mt-2">
+                <small class="text-white-50" id="last-updated">
+                    <i class="fas fa-clock me-1"></i> Last updated: --
+                </small>
             </div>
 
             <!-- Back Button -->
