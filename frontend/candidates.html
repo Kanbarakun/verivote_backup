@@ -624,6 +624,7 @@
         }
 
         // Render candidates based on filter
+        // Replace the renderCandidates function in candidates.html with this:
         function renderCandidates(candidates) {
             const grid = document.getElementById('candidatesGrid');
             
@@ -642,9 +643,9 @@
                 <div class="candidate-card" data-position="${candidate.position}">
                     <div class="candidate-header">
                         <img src="${candidate.photo || 'imgs/default.jpg'}" 
-                             alt="${candidate.name}" 
-                             class="candidate-photo"
-                             onerror="this.src='imgs/default.jpg'">
+                            alt="${candidate.name}" 
+                            class="candidate-photo"
+                            onerror="this.onerror=null; this.src='imgs/default.jpg';">
                     </div>
                     <div class="candidate-info">
                         <h3>${candidate.name}</h3>
@@ -657,24 +658,23 @@
                 </div>
             `).join('');
         }
+                // Filter candidates by position
+                function filterCandidates(position) {
+                    currentFilter = position;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    event.target.classList.add('active');
 
-        // Filter candidates by position
-        function filterCandidates(position) {
-            currentFilter = position;
-            
-            // Update active tab
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            if (position === 'all') {
-                renderCandidates(allCandidates);
-            } else {
-                const filtered = allCandidates.filter(c => c.position === position);
-                renderCandidates(filtered);
-            }
-        }
+                    if (position === 'all') {
+                        renderCandidates(allCandidates);
+                    } else {
+                        const filtered = allCandidates.filter(c => c.position === position);
+                        renderCandidates(filtered);
+                    }
+                }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {

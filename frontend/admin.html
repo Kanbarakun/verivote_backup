@@ -385,7 +385,7 @@
         </div>
     </div>
 
-   <!-- Candidate Modal - COMPLETELY REWRITTEN with correct IDs -->
+   <!-- Candidate Modal - UPDATED with better image handling -->
 <div class="modal fade" id="candidateModal" tabindex="-1" aria-labelledby="candidateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -397,26 +397,45 @@
                 <form id="candidateForm">
                     <div class="row">
                         <div class="col-md-4 text-center">
-                            <img id="previewImage" src="imgs/default.jpg" alt="Preview" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #00205b;">
-                            <div>
-                                <label for="photoUpload" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-upload"></i> Upload Photo
+                            <!-- Image preview with better error handling -->
+                            <img id="previewImage" src="imgs/default.jpg" alt="Preview" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #00205b;" onerror="this.src='imgs/default.jpg'">
+                            
+                            <!-- Image upload options -->
+                            <div class="mb-3">
+                                <label for="photoUpload" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-upload me-2"></i>Upload Photo
                                 </label>
                                 <input type="file" id="photoUpload" accept="image/*" style="display: none;">
                             </div>
-                            <small class="text-muted d-block mt-2">Photo will be uploaded to server</small>
+                            
+                            <!-- OR divider -->
+                            <div class="text-muted small mb-2">— OR —</div>
+                            
+                            <!-- Image URL input -->
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fas fa-link"></i></span>
+                                <input type="text" class="form-control" id="candidatePhoto" placeholder="Image URL" value="imgs/default.jpg">
+                            </div>
+                            <small class="text-muted d-block mt-2">Enter image URL or upload a file</small>
+                            
+                            <!-- Test image button -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="testImageUrl()">
+                                <i class="fas fa-eye me-1"></i> Test Image
+                            </button>
                         </div>
+                        
                         <div class="col-md-8">
+                            <!-- Hidden field for edit mode tracking -->
                             <input type="hidden" id="editMode" value="false">
                             
                             <div class="mb-3">
                                 <label for="candidateName" class="form-label">Full Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="candidateName" placeholder="Enter candidate's full name">
+                                <input type="text" class="form-control" id="candidateName" placeholder="Enter candidate's full name" required>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="candidatePosition" class="form-label">Position <span class="text-danger">*</span></label>
-                                <select class="form-control" id="candidatePosition">
+                                <select class="form-control" id="candidatePosition" required>
                                     <option value="">Select Position</option>
                                     <option value="president">President</option>
                                     <option value="senators">Senator</option>
@@ -426,13 +445,8 @@
                             
                             <div class="mb-3">
                                 <label for="candidateId" class="form-label">Candidate ID <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="candidateId" placeholder="e.g., p1, s1, m1">
+                                <input type="text" class="form-control" id="candidateId" placeholder="e.g., p1, s1, m1" required>
                                 <small class="text-muted">Use format: p1,p2 for President | s1,s2 for Senators | m1,m2 for Mayor</small>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="candidatePhoto" class="form-label">Photo URL</label>
-                                <input type="text" class="form-control" id="candidatePhoto" placeholder="imgs/candidate.jpg">
                             </div>
                             
                             <div class="mb-3">

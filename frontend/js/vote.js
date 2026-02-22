@@ -293,9 +293,14 @@ function renderColumns() {
                 card.classList.add('selected');
                 selections[category] = candidate.id;
                 
-                // Update Modal Info
+                // In renderColumns function, update the image part:
                 const photoEl = document.getElementById('modal-photo');
-                if(photoEl) photoEl.src = candidate.photo || 'imgs/default.jpg';
+                if(photoEl) {
+                    photoEl.src = candidate.photo || 'imgs/default.jpg';
+                    photoEl.onerror = function() {
+                        this.src = 'imgs/default.jpg';
+                    };
+                }
                 
                 document.getElementById('modal-name').innerText = candidate.name;
                 document.getElementById('modal-bio').innerText = candidate.bio || 'No bio available';

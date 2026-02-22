@@ -305,6 +305,7 @@ async function loadCandidates() {
 }
 
 // Render candidates
+// Update renderCandidates function to handle data URLs
 function renderCandidates(candidates) {
     const grid = document.getElementById('candidatesGrid');
     if (!grid) return;
@@ -328,7 +329,8 @@ function renderCandidates(candidates) {
             <div class="col-md-4 mb-4">
                 <div class="card candidate-card h-100">
                     <div class="card-header text-center pt-4" style="background: linear-gradient(135deg, #00205b, #ce1126);">
-                        <img src="${photo}" alt="${name}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid white;" onerror="this.src='imgs/default.jpg'">
+                        <img src="${photo}" alt="${name}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid white;" 
+                             onerror="this.onerror=null; this.src='imgs/default.jpg';">
                     </div>
                     <div class="card-body text-center">
                         <h5 class="card-title">${name}</h5>
@@ -441,13 +443,16 @@ function editCandidate(id) {
 }
 
 // Save candidate (FIXED)
+// Update saveCandidate function to handle data URLs
 async function saveCandidate() {
     // Get form values with proper IDs
+    const photoValue = document.getElementById('candidatePhoto')?.value?.trim();
+    
     const candidate = {
         id: document.getElementById('candidateId')?.value?.trim(),
         name: document.getElementById('candidateName')?.value?.trim(),
         position: document.getElementById('candidatePosition')?.value,
-        photo: document.getElementById('candidatePhoto')?.value?.trim() || `imgs/${document.getElementById('candidateId')?.value}.jpg`,
+        photo: photoValue || 'imgs/default.jpg',
         bio: document.getElementById('candidateBio')?.value?.trim() || '',
         status: document.getElementById('candidateStatus')?.value || 'active'
     };
@@ -484,8 +489,6 @@ async function saveCandidate() {
         
         console.log('Saving candidate:', candidate);
         console.log('Mode:', isEditing ? 'Edit' : 'Add');
-        console.log('URL:', url);
-        console.log('Method:', method);
         
         const response = await fetch(url, {
             method: method,
@@ -516,7 +519,7 @@ async function saveCandidate() {
             document.getElementById('candidateName').value = '';
             document.getElementById('candidatePosition').value = '';
             document.getElementById('candidateId').value = '';
-            document.getElementById('candidatePhoto').value = '';
+            document.getElementById('candidatePhoto').value = 'imgs/default.jpg';
             document.getElementById('candidateBio').value = '';
             document.getElementById('candidateStatus').value = 'active';
             document.getElementById('previewImage').src = 'imgs/default.jpg';
@@ -1147,5 +1150,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminNameEl = document.getElementById('adminName');
     if (adminNameEl) {
         adminNameEl.textContent = localStorage.getItem('adminName') || 'Admin User';
+    }
+});
+
+// Add this function to test image URLs
+function testImageUrl() {
+    const url = document.getElementById('candidatePhoto').value;
+    if (!url) {
+        showError('Please enter an image URL');
+        return;
+    }
+    
+    // Create a test image
+    const img = new Image();
+    img.onload = function() {
+        document.getElementById('previewImage').src = url;
+        showSuccess('Image loaded successfully!');
+    };
+    img.onerror = function() {
+        showError('Invalid image URL or image cannot be loaded');
+        document.getElementById('previewImage').src = 'imgs/default.jpg';
+    };
+    img.src = url;
+}
+
+// Update the image preview function
+document.addEventListener('DOMContentLoaded', function() {
+    const photoUpload = document.getElementById('photoUpload');
+    if (photoUpload) {
+        photoUpload.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                
+                // Check file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showError('Image too large. Maximum size is 5MB.');
+                    return;
+                }
+                
+                // Check file type
+                if (!file.type.startsWith('image/')) {
+                    showError('Please select an image file.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(readerEvent) {
+                    // Preview the image
+                    document.getElementById('previewImage').src = readerEvent.target.result;
+                    
+                    // For JSONBin, we need to store the image as a data URL
+                    // This will make the image work everywhere
+                    document.getElementById('candidatePhoto').value = readerEvent.target.result;
+                    
+                    showSuccess('Image loaded successfully!');
+                };
+                reader.onerror = function() {
+                    showError('Failed to read image file.');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Add input event for photo URL to update preview
+    const photoInput = document.getElementById('candidatePhoto');
+    if (photoInput) {
+        photoInput.addEventListener('input', function(e) {
+            const url = e.target.value;
+            if (url) {
+                // Use a timeout to avoid too many updates
+                clearTimeout(window.photoUrlTimeout);
+                window.photoUrlTimeout = setTimeout(() => {
+                    const img = new Image();
+                    img.onload = function() {
+                        document.getElementById('previewImage').src = url;
+                    };
+                    img.onerror = function() {
+                        // Don't show error for every keystroke, just silently use default
+                        if (!document.getElementById('previewImage').src.includes('default')) {
+                            document.getElementById('previewImage').src = 'imgs/default.jpg';
+                        }
+                    };
+                    img.src = url;
+                }, 500);
+            }
+        });
     }
 });
