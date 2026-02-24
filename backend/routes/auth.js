@@ -412,4 +412,13 @@ router.post('/logout', verifyToken, (req, res) => {
     });
 });
 
+// TEST TOKEN - Simple endpoint to verify token is working
+router.get('/test-token', verifyToken, (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'Token is valid',
+        user: req.user
+    });
+});
+
 module.exports = router;

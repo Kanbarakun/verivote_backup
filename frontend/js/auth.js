@@ -1,3 +1,5 @@
+// frontend/js/auth.js
+
 // Wrap everything in a DOMContentLoaded listener to ensure the HTML is loaded first
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -36,50 +38,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIN LOGIC ---
-const loginBtn = document.getElementById('btn-login');
-if (loginBtn) {
-    loginBtn.addEventListener('click', async () => {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
+    const loginBtn = document.getElementById('btn-login');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-        if (!email || !password) {
-            alert("Please enter both email and password!");
-            return;
-        }
-
-        try {
-            console.log('Attempting login for:', email);
-            
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            
-            const result = await response.json();
-            console.log('Login response:', result);
-            
-            if (result.success) {
-                // Save the email exactly as returned from server
-                localStorage.setItem('userEmail', result.email);
-                localStorage.setItem('userName', result.userName);
-                localStorage.setItem('token', result.token);
-                
-                console.log('Saved to localStorage:', { 
-                    email: result.email, 
-                    userName: result.userName 
-                });
-
-                window.location.href = 'index.html';
-            } else {
-                alert(result.message);
+            if (!email || !password) {
+                alert("Please enter both email and password!");
+                return;
             }
-        } catch (error) {
-            console.error("Login failed:", error);
-            alert("Login failed. Please try again.");
-        }
-    });
-}
+
+            try {
+                console.log('Attempting login for:', email);
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                console.log('Login response:', result);
+                
+                if (result.success) {
+                    // Save ALL user data to localStorage
+                    localStorage.setItem('userEmail', result.email);
+                    localStorage.setItem('userName', result.userName);
+                    localStorage.setItem('token', result.token); // THIS IS CRITICAL
+                    localStorage.setItem('hasVoted', result.hasVoted ? 'true' : 'false');
+                    
+                    console.log('Saved to localStorage:', { 
+                        email: result.email, 
+                        userName: result.userName,
+                        token: result.token ? '✓ Token saved' : '✗ No token'
+                    });
+
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error("Login failed:", error);
+                alert("Login failed. Please try again.");
+            }
+        });
+    }
     
     // Optional: Add a logout function
     const logoutBtn = document.getElementById('btn-logout');
@@ -87,7 +91,9 @@ if (loginBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userName');
-            window.location.href = 'login.html';
+            localStorage.removeItem('token');
+            localStorage.removeItem('hasVoted');
+            window.location.href = 'index.html';
         });
     }
 });

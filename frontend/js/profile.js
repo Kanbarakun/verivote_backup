@@ -316,9 +316,10 @@ function deleteAccount() {
     modal.show();
 }
 
-// Confirm delete account 
+// Confirm delete account (FIXED - with better error handling)
 async function confirmDelete() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    const modalEl = document.getElementById('deleteModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
     const deleteBtn = document.querySelector('#deleteModal .btn-danger');
     const originalText = deleteBtn.innerHTML;
     
@@ -331,8 +332,15 @@ async function confirmDelete() {
         const token = localStorage.getItem('token');
         const userEmail = localStorage.getItem('userEmail');
         
+        console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
+        console.log('User email:', userEmail);
+        
         if (!token) {
-            throw new Error('No authentication token found');
+            throw new Error('No authentication token found. Please log in again.');
+        }
+        
+        if (!userEmail) {
+            throw new Error('No user email found. Please log in again.');
         }
         
         console.log(`Deleting account for: ${userEmail}`);
@@ -347,9 +355,10 @@ async function confirmDelete() {
         });
         
         const data = await response.json();
+        console.log('Delete response:', data);
         
         if (!response.ok) {
-            throw new Error(data.message || 'Failed to delete account');
+            throw new Error(data.message || `Server error: ${response.status}`);
         }
         
         if (data.success) {
@@ -357,7 +366,7 @@ async function confirmDelete() {
             localStorage.clear();
             
             // Hide modal
-            modal.hide();
+            if (modal) modal.hide();
             
             // Show success message
             showAlert('Account deleted successfully. Redirecting...', 'success');
@@ -380,8 +389,127 @@ async function confirmDelete() {
         // Show error message
         showAlert('Failed to delete account: ' + error.message, 'danger');
         
-        // Hide modal
-        modal.hide();
+        // Hide modal if it exists
+        if (modal) modal.hide();
+    }
+}
+
+// Also update the checkAuth function to verify token exists
+function checkAuth() {
+    const userEmail = localStorage.getItem('userEmail');
+    const token = localStorage.getItem('token');
+    
+    if (!userEmail || !token) {
+        console.log('Auth check failed: No user email or token');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Add a function to verify token with backend (optional)
+async function verifyTokenWithBackend() {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/profile`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data.success;
+        }
+        return false;
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        return false;
+    }
+}
+
+// Update loadUserProfile to use token
+async function loadUserProfile() {
+    if (!checkAuth()) return;
+    
+    const email = localStorage.getItem('userEmail');
+    const token = localStorage.getItem('token');
+    
+    try {
+        // First try to fetch from backend
+        try {
+            const response = await fetch(`${API_URL}/api/auth/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // Use data from backend
+                    document.getElementById('profileName').textContent = data.user.name;
+                    document.getElementById('profileEmail').textContent = data.user.email;
+                    document.getElementById('fullName').value = data.user.name;
+                    document.getElementById('displayEmail').value = data.user.email;
+                    
+                    // Format date
+                    const createdDate = new Date(data.user.createdAt);
+                    document.getElementById('accountCreated').value = createdDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    
+                    // Update voting status
+                    const hasVoted = data.user.hasVoted;
+                    localStorage.setItem('hasVoted', hasVoted ? 'true' : 'false');
+                    
+                    const statusBadge = document.getElementById('votingStatusBadge');
+                    if (hasVoted) {
+                        statusBadge.textContent = '✓ You have voted';
+                        statusBadge.className = 'badge badge-success';
+                    } else {
+                        statusBadge.textContent = '○ You have not voted yet';
+                        statusBadge.className = 'badge badge-warning';
+                    }
+                    
+                    // Load voting history
+                    loadVotingHistory(email, hasVoted);
+                    return;
+                }
+            }
+        } catch (apiError) {
+            console.log('Backend fetch failed, using localStorage fallback', apiError);
+        }
+        
+        // Fallback to localStorage data
+        console.log('Using localStorage fallback for profile data');
+        const userName = localStorage.getItem('userName') || email.split('@')[0];
+        const hasVoted = localStorage.getItem('hasVoted') === 'true';
+        
+        document.getElementById('profileName').textContent = userName;
+        document.getElementById('profileEmail').textContent = email;
+        document.getElementById('fullName').value = userName;
+        document.getElementById('displayEmail').value = email;
+        document.getElementById('accountCreated').value = 'Account created';
+        
+        const statusBadge = document.getElementById('votingStatusBadge');
+        if (hasVoted) {
+            statusBadge.textContent = '✓ You have voted';
+            statusBadge.className = 'badge badge-success';
+        } else {
+            statusBadge.textContent = '○ You have not voted yet';
+            statusBadge.className = 'badge badge-warning';
+        }
+        
+        loadVotingHistory(email, hasVoted);
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        showAlert('Failed to load profile data', 'danger');
     }
 }
 
