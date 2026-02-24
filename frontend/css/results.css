@@ -237,3 +237,62 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+
+        /* ==================== BOOTSTRAP OVERRIDES ==================== */
+
+.main-header-pill {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #00205b !important;
+    font-size: 2.5rem !important;
+    font-weight: bold !important;
+    padding: 15px 40px !important;
+    border-radius: 60px !important;
+    display: inline-block !important;
+    letter-spacing: 2px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    margin-bottom: 20px !important;
+}
+
+.vote-column-container {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 25px !important;
+    padding: 25px !important;
+    min-height: 400px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.column-title {
+    background: linear-gradient(135deg, #00205b, #ce1126) !important;
+    color: white !important;
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+    padding: 12px 25px !important;
+    border-radius: 50px !important;
+    display: inline-block !important;
+    margin-bottom: 25px !important;
+    width: 100% !important;
+    text-align: center !important;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 20px !important;
+    padding: 20px !important;
+    min-width: 150px !important;
+    text-align: center !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-header-pill {
+        font-size: 1.8rem !important;
+        padding: 12px 25px !important;
+    }
+    
+    .column-title {
+        font-size: 1.2rem !important;
+    }
+}

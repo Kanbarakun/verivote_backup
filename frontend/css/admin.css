@@ -816,3 +816,126 @@
 .modal-body {
     background: #fafafa;
 }
+
+/* ==================== BOOTSTRAP OVERRIDES ==================== */
+
+/* Override Bootstrap card styles */
+.card {
+    background: white !important;
+    border: none !important;
+    border-radius: 15px !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #00205b, #ce1126) !important;
+    border-bottom: none !important;
+}
+
+/* Override Bootstrap buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #00205b, #ce1126) !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 10px 25px !important;
+    font-weight: 600 !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(206, 17, 38, 0.3) !important;
+}
+
+.btn-secondary {
+    background: white !important;
+    color: #00205b !important;
+    border: 2px solid #00205b !important;
+    border-radius: 50px !important;
+    padding: 8px 20px !important;
+    font-weight: 600 !important;
+}
+
+.btn-secondary:hover {
+    background: #00205b !important;
+    color: white !important;
+}
+
+.btn-success, .btn-warning, .btn-danger {
+    border-radius: 50px !important;
+    padding: 8px 20px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+
+/* Override Bootstrap badges */
+.badge {
+    padding: 8px 15px !important;
+    border-radius: 50px !important;
+    font-weight: 500 !important;
+}
+
+.bg-success {
+    background: #4caf50 !important;
+}
+
+.bg-warning {
+    background: #ffc107 !important;
+    color: #333 !important;
+}
+
+.bg-secondary {
+    background: #6c757d !important;
+}
+
+/* Override Bootstrap form controls */
+.form-control {
+    border-radius: 10px !important;
+    border: 2px solid #e0e0e0 !important;
+    padding: 10px 15px !important;
+}
+
+.form-control:focus {
+    border-color: #00205b !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 32, 91, 0.25) !important;
+}
+
+/* Override Bootstrap tables */
+.table {
+    color: #333 !important;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6 !important;
+    font-weight: 600 !important;
+    color: #00205b !important;
+}
+
+/* Override Bootstrap modals */
+.modal-content {
+    border-radius: 15px !important;
+    border: none !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 20px 25px !important;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6 !important;
+    padding: 20px 25px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .btn {
+        width: 100% !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .table {
+        display: block !important;
+        overflow-x: auto !important;
+    }
+}
