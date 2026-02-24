@@ -225,4 +225,138 @@ router.post('/check-user', async (req, res) => {
     }
 });
 
+// DELETE /api/auth/account - DELETE user account
+router.delete('/account', verifyToken, async (req, res) => {
+    try {
+        const { email } = req.user;
+        
+        // READ users
+        let users = await fileHandler.read('users') || [];
+        
+        // FILTER OUT the user (DELETE operation)
+        users = users.filter(u => u.email !== email);
+
+        // SAVE updated users array
+        await fileHandler.write('users', users);
+
+        res.json({ 
+            success: true, 
+            message: 'Account deleted successfully' 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+        // /api/auth/profile - UPDATE user profile
+router.put('/profile', verifyToken, async (req, res) => {
+    try {
+        const { email } = req.user; // From token
+        const { name, newPassword } = req.body;
+        
+        // READ users
+        const users = await fileHandler.read('users') || [];
+        const userIndex = users.findIndex(u => u.email === email);
+        
+        if (userIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        // UPDATE user information
+        if (name) users[userIndex].name = name;
+        
+        if (newPassword) {
+            users[userIndex].password = await bcrypt.hash(newPassword, 10);
+        }
+        
+        users[userIndex].updatedAt = new Date().toISOString();
+
+        // SAVE updated users array
+        await fileHandler.write('users', users);
+
+        res.json({ 
+            success: true, 
+            message: 'Profile updated successfully' 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// DELETE /api/auth/account - DELETE user account
+router.delete('/account', verifyToken, async (req, res) => {
+    try {
+        const { email } = req.user; // From JWT token
+        
+        console.log(`Attempting to delete account for: ${email}`);
+        
+        // Read current users
+        let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
+        
+        // Find the user
+        const userExists = users.some(u => u && u.email === email);
+        if (!userExists) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+        
+        // Filter out the user (DELETE operation)
+        const updatedUsers = users.filter(u => u && u.email !== email);
+        
+        // Read current votes
+        let votes = await fileHandler.read('votes') || [];
+        if (!Array.isArray(votes)) votes = [];
+        
+        // Also remove user's voting records (optional - you might want to keep for audit)
+        const updatedVotes = votes.filter(v => v && v.voterEmail !== email);
+        
+        // Save both updated arrays
+        const usersSaved = await fileHandler.write('users', updatedUsers);
+        const votesSaved = await fileHandler.write('votes', updatedVotes);
+        
+        if (!usersSaved) {
+            throw new Error('Failed to save users after deletion');
+        }
+        
+        // Log activity
+        await logActivity('system', 'Account deleted', `User ${email} deleted their account`);
+        
+        console.log(`Account successfully deleted for: ${email}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Account deleted successfully' 
+        });
+
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to delete account: ' + error.message 
+        });
+    }
+});
+
+// Token verification middleware
+const verifyToken = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+};
 module.exports = router;

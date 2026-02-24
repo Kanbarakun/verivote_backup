@@ -909,3 +909,109 @@ footer {
         align-items: flex-end;
     }
 }
+/* Delete Modal Specific Styles */
+#deleteModal .modal-content {
+    background: white;
+    color: #333;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+#deleteModal .modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    padding: 20px 25px;
+    border-bottom: none;
+}
+
+#deleteModal .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#deleteModal .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+#deleteModal .modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+#deleteModal .modal-body {
+    padding: 30px 25px;
+    background: #f8f9fa;
+}
+
+#deleteModal .modal-body p {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+#deleteModal .modal-body p:last-child {
+    margin-bottom: 0;
+}
+
+#deleteModal .modal-body .text-danger {
+    color: #dc3545 !important;
+    font-size: 1.2rem;
+}
+
+#deleteModal .modal-footer {
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    padding: 20px 25px;
+}
+
+#deleteModal .modal-footer .btn {
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+#deleteModal .modal-footer .btn-secondary {
+    background: #6c757d;
+    border: none;
+    color: white;
+}
+
+#deleteModal .modal-footer .btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+}
+
+#deleteModal .modal-footer .btn-danger {
+    background: #dc3545;
+    border: none;
+    color: white;
+}
+
+#deleteModal .modal-footer .btn-danger:hover:not(:disabled) {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+#deleteModal .modal-footer .btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Animation for modal */
+.modal.fade .modal-dialog {
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.modal.show .modal-dialog {
+    transform: scale(1);
+}

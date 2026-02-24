@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIN LOGIC ---
-    // In your login function, you might want to show the exact email that was saved
 const loginBtn = document.getElementById('btn-login');
 if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
@@ -64,6 +63,7 @@ if (loginBtn) {
                 // Save the email exactly as returned from server
                 localStorage.setItem('userEmail', result.email);
                 localStorage.setItem('userName', result.userName);
+                localStorage.setItem('token', result.token);
                 
                 console.log('Saved to localStorage:', { 
                     email: result.email, 

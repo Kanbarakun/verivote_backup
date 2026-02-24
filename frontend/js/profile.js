@@ -310,65 +310,81 @@ async function updatePassword(event) {
 }
 
 // Delete account - OPEN MODAL
+// Delete account - OPEN MODAL (FIXED)
 function deleteAccount() {
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
 }
 
-// Confirm delete account
+// Confirm delete account 
 async function confirmDelete() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    const deleteBtn = document.querySelector('#deleteModal .btn-danger');
+    const originalText = deleteBtn.innerHTML;
     
     try {
-        // In production: await fetch(`${API_URL}/api/auth/account`, { method: 'DELETE' })
+        // Show loading state
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+        deleteBtn.disabled = true;
         
-        // Clear local storage
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
-        localStorage.removeItem('hasVoted');
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        const userEmail = localStorage.getItem('userEmail');
         
-        // Hide modal
-        modal.hide();
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
         
-        // Show success message and redirect
-        showAlert('Account deleted successfully', 'success');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1500);
+        console.log(`Deleting account for: ${userEmail}`);
+        
+        // Call the backend to actually delete the account
+        const response = await fetch(`${API_URL}/api/auth/account`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to delete account');
+        }
+        
+        if (data.success) {
+            // Clear ALL local storage
+            localStorage.clear();
+            
+            // Hide modal
+            modal.hide();
+            
+            // Show success message
+            showAlert('Account deleted successfully. Redirecting...', 'success');
+            
+            // Redirect to home page
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        } else {
+            throw new Error(data.message || 'Failed to delete account');
+        }
         
     } catch (error) {
         console.error('Error deleting account:', error);
-        showAlert('Failed to delete account', 'danger');
+        
+        // Reset button
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+        
+        // Show error message
+        showAlert('Failed to delete account: ' + error.message, 'danger');
+        
+        // Hide modal
         modal.hide();
     }
 }
 
-// Update navigation based on auth state
-function updateNavAuth() {
-    const navAuth = document.getElementById('navAuth');
-    const userEmail = localStorage.getItem('userEmail');
-    
-    if (userEmail) {
-        navAuth.innerHTML = `
-            <div class="user-info">
-                <span>
-                    <i class="fas fa-user-circle me-2"></i>
-                    ${userEmail.split('@')[0] || 'User'}
-                </span>
-                <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </button>
-            </div>
-        `;
-    } else {
-        navAuth.innerHTML = `
-            <a href="login.html" class="nav-link login-btn-nav">
-                <i class="fas fa-sign-in-alt me-2"></i>Login
-            </a>
-        `;
-    }
-}
 
 // Logout function
 function logout() {
