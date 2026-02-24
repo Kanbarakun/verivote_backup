@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         token: result.token ? '✓ Token saved' : '✗ No token'
                     });
 
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'index.html';
                 } else {
                     alert(result.message);
                 }

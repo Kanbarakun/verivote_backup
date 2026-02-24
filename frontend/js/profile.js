@@ -600,6 +600,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Open delete confirmation modal
+function openDeleteModal() {
+    const modal = new bootstrap.Modal(
+        document.getElementById("deleteModal")
+    );
+
+    modal.show();
+}
+
+// Confirm delete account
+async function confirmDelete() {
+
+    try {
+
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(
+            "https://verivote-backup.onrender.com/api/auth/delete",
+            {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            alert("Account deleted successfully");
+
+            // logout
+            localStorage.removeItem("token");
+
+            window.location.href = "index.html";
+
+        } else {
+
+            alert(data.message || "Delete failed");
+
+        }
+
+    } catch (err) {
+
+        alert("Server error");
+
+    }
+
+}
+
 // Make functions global for onclick handlers
 window.togglePassword = togglePassword;
 window.deleteAccount = deleteAccount;
