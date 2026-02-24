@@ -100,6 +100,36 @@ function updatePasswordStrength(password) {
     }
 }
 
+// Fetch user's voting status from backend
+async function fetchUserVotingStatus(email) {
+    try {
+        const response = await fetch(`${API_URL}/api/vote/status?email=${encodeURIComponent(email)}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch voting status');
+        }
+        const data = await response.json();
+        return data.hasVoted;
+    } catch (error) {
+        console.error('Error fetching voting status:', error);
+        return false;
+    }
+}
+
+// Fetch user's voting history
+async function fetchUserVotingHistory(email) {
+    try {
+        const response = await fetch(`${API_URL}/api/vote/history?email=${encodeURIComponent(email)}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch voting history');
+        }
+        const data = await response.json();
+        return data.votes || [];
+    } catch (error) {
+        console.error('Error fetching voting history:', error);
+        return [];
+    }
+}
+
 // Load user profile data
 async function loadUserProfile() {
     if (!checkAuth()) return;
@@ -107,14 +137,17 @@ async function loadUserProfile() {
     const email = localStorage.getItem('userEmail');
     
     try {
-        // For now, we'll use mock data since we need a backend endpoint
+        // Fetch actual voting status from backend
+        const hasVoted = await fetchUserVotingStatus(email);
+        localStorage.setItem('hasVoted', hasVoted ? 'true' : 'false');
+        
+        // For now, we'll use mock user data since we need a profile endpoint
         // In production, you'd fetch from: `${API_URL}/api/auth/profile`
         
         const mockUserData = {
             name: localStorage.getItem('userName') || email.split('@')[0],
             email: email,
-            createdAt: '2024-01-15T10:30:00.000Z',
-            hasVoted: localStorage.getItem('hasVoted') === 'true'
+            createdAt: '2024-01-15T10:30:00.000Z'
         };
         
         // Update profile display
@@ -131,9 +164,9 @@ async function loadUserProfile() {
             day: 'numeric'
         });
         
-        // Update voting status
+        // Update voting status based on ACTUAL backend data
         const statusBadge = document.getElementById('votingStatusBadge');
-        if (mockUserData.hasVoted) {
+        if (hasVoted) {
             statusBadge.textContent = '✓ You have voted';
             statusBadge.className = 'badge badge-success';
         } else {
@@ -142,7 +175,7 @@ async function loadUserProfile() {
         }
         
         // Load voting history
-        loadVotingHistory(mockUserData.hasVoted);
+        loadVotingHistory(email, hasVoted);
         
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -151,7 +184,7 @@ async function loadUserProfile() {
 }
 
 // Load voting history
-function loadVotingHistory(hasVoted) {
+async function loadVotingHistory(email, hasVoted) {
     const historyDiv = document.getElementById('votingHistory');
     
     if (!hasVoted) {
@@ -159,24 +192,44 @@ function loadVotingHistory(hasVoted) {
             <div class="no-history">
                 <i class="fas fa-vote-yea fa-3x mb-3" style="color: rgba(255,255,255,0.3);"></i>
                 <p>You haven't voted in any elections yet.</p>
-                <a href="vote.html" class="btn btn-primary mt-2">Vote Now</a>
+                <a href="vote.html" class="btn-vote-now mt-3">Vote Now</a>
             </div>
         `;
         return;
     }
     
-    // Mock history data - in production, fetch from API
-    historyDiv.innerHTML = `
-        <div class="vote-history-item">
-            <div class="vote-icon">
-                <i class="fas fa-check"></i>
+    // Fetch actual voting history
+    const votes = await fetchUserVotingHistory(email);
+    
+    if (votes.length === 0) {
+        historyDiv.innerHTML = `
+            <div class="vote-history-item">
+                <div class="vote-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="vote-details">
+                    <p>You have voted in the current election</p>
+                    <span class="vote-time">Vote recorded</span>
+                </div>
             </div>
-            <div class="vote-details">
-                <p>General Election 2024</p>
-                <span class="vote-time">Voted on ${new Date().toLocaleDateString()}</span>
-            </div>
-        </div>
-    `;
+        `;
+    } else {
+        let historyHtml = '';
+        votes.forEach(vote => {
+            historyHtml += `
+                <div class="vote-history-item">
+                    <div class="vote-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="vote-details">
+                        <p>Vote Cast</p>
+                        <span class="vote-time">${new Date(vote.timestamp).toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        });
+        historyDiv.innerHTML = historyHtml;
+    }
 }
 
 // Save profile changes
@@ -195,8 +248,8 @@ async function saveProfileChanges(event) {
     setLoading(saveBtn, true, 'Save Changes');
     
     try {
-        // Mock successful update
         // In production: await fetch(`${API_URL}/api/auth/profile`, {...})
+        // Mock successful update for now
         
         localStorage.setItem('userName', newName);
         document.getElementById('profileName').textContent = newName;
@@ -238,7 +291,6 @@ async function updatePassword(event) {
     setLoading(saveBtn, true, 'Update Password');
     
     try {
-        // Mock successful update
         // In production: await fetch(`${API_URL}/api/auth/password`, {...})
         
         showAlert('Password updated successfully!', 'success');
@@ -257,7 +309,7 @@ async function updatePassword(event) {
     }
 }
 
-// Delete account
+// Delete account - OPEN MODAL
 function deleteAccount() {
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
@@ -268,7 +320,6 @@ async function confirmDelete() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
     
     try {
-        // Mock successful deletion
         // In production: await fetch(`${API_URL}/api/auth/account`, { method: 'DELETE' })
         
         // Clear local storage
@@ -277,8 +328,14 @@ async function confirmDelete() {
         localStorage.removeItem('token');
         localStorage.removeItem('hasVoted');
         
-        // Redirect to home
-        window.location.href = 'index.html';
+        // Hide modal
+        modal.hide();
+        
+        // Show success message and redirect
+        showAlert('Account deleted successfully', 'success');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1500);
         
     } catch (error) {
         console.error('Error deleting account:', error);
@@ -296,7 +353,7 @@ function updateNavAuth() {
         navAuth.innerHTML = `
             <div class="user-info">
                 <span>
-                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-user-circle me-2"></i>
                     ${userEmail.split('@')[0] || 'User'}
                 </span>
                 <button class="logout-btn" onclick="logout()">
@@ -326,6 +383,41 @@ function logout() {
     window.location.href = 'index.html';
 }
 
+// Initialize Bootstrap tabs properly
+function initializeTabs() {
+    // Get all tab buttons
+    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+    
+    // Add click event to each tab
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all tabs
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            this.setAttribute('aria-selected', 'true');
+            
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // Show selected tab pane
+            const targetId = this.getAttribute('data-bs-target');
+            const targetPane = document.querySelector(targetId);
+            if (targetPane) {
+                targetPane.classList.add('show', 'active');
+            }
+        });
+    });
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     // Check authentication
@@ -333,6 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update navigation
     updateNavAuth();
+    
+    // Initialize tabs
+    initializeTabs();
     
     // Load user profile
     loadUserProfile();
