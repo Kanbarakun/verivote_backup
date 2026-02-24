@@ -1238,3 +1238,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ==================== VOTE RESET FUNCTIONS ====================
+
+// Open reset confirmation modal
+function openResetModal() {
+    const modal = new bootstrap.Modal(document.getElementById('resetModal'));
+    modal.show();
+}
+
+// Confirm reset votes
+async function confirmReset() {
+    const modalEl = document.getElementById('resetModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    const resetBtn = document.querySelector('#resetModal .btn-warning');
+    const originalText = resetBtn ? resetBtn.innerHTML : 'Yes, Reset All Votes';
+    
+    try {
+        // Show loading state
+        if (resetBtn) {
+            resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Resetting...';
+            resetBtn.disabled = true;
+        }
+        
+        const token = localStorage.getItem('adminToken');
+        
+        if (!token) {
+            throw new Error('No admin token found. Please log in again.');
+        }
+        
+        console.log('Resetting all votes...');
+        
+        // Call backend to reset votes
+        const response = await fetch(`${API_URL}/api/admin/reset-votes`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        console.log('Reset response:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.message || `Server error: ${response.status}`);
+        }
+        
+        if (data.success) {
+            // Hide modal
+            if (modal) modal.hide();
+            
+            // Show success message
+            showSuccess('All votes have been reset successfully!');
+            
+            // Refresh dashboard stats
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                loadDashboardStats();
+            }
+            
+            // If in results section, refresh that too
+            if (document.getElementById('results').classList.contains('active')) {
+                loadResults();
+            }
+        } else {
+            throw new Error(data.message || 'Failed to reset votes');
+        }
+        
+    } catch (error) {
+        console.error('Error resetting votes:', error);
+        
+        // Reset button
+        if (resetBtn) {
+            resetBtn.innerHTML = originalText;
+            resetBtn.disabled = false;
+        }
+        
+        // Show error message
+        showError('Failed to reset votes: ' + error.message);
+        
+        // Hide modal
+        if (modal) modal.hide();
+    }
+}

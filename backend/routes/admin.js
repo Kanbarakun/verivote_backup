@@ -836,4 +836,77 @@ router.post('/settings', verifyAdmin, async (req, res) => {
     }
 });
 
+// ==================== VOTE RESET ====================
+
+// Reset all votes (clear votes and reset user voting status)
+router.post('/reset-votes', verifyAdmin, async (req, res) => {
+    try {
+        console.log('='.repeat(50));
+        console.log('RESET VOTES ATTEMPT');
+        console.log('Admin:', req.admin.email);
+        console.log('='.repeat(50));
+        
+        // Read current data
+        let users = await fileHandler.read('users') || [];
+        let votes = await fileHandler.read('votes') || [];
+        
+        // Ensure arrays
+        users = Array.isArray(users) ? users : [];
+        votes = Array.isArray(votes) ? votes : [];
+        
+        console.log(`Before reset - Users: ${users.length}, Votes: ${votes.length}`);
+        
+        // Reset all users' voting status
+        const updatedUsers = users.map(user => {
+            if (user) {
+                return {
+                    ...user,
+                    hasVoted: false,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return user;
+        });
+        
+        // Clear all votes (set to empty array)
+        const updatedVotes = [];
+        
+        // Save to JSONBin
+        const usersSaved = await fileHandler.write('users', updatedUsers);
+        const votesSaved = await fileHandler.write('votes', updatedVotes);
+        
+        if (!usersSaved || !votesSaved) {
+            throw new Error('Failed to save reset data');
+        }
+        
+        // Log activity
+        await logActivity(req.admin.email, 'Reset votes', `Reset all votes (cleared ${votes.length} votes, reset ${users.length} users)`);
+        
+        console.log(`After reset - Users: ${updatedUsers.length}, Votes: ${updatedVotes.length}`);
+        console.log('VOTE RESET SUCCESSFUL');
+        console.log('='.repeat(50));
+        
+        res.json({ 
+            success: true, 
+            message: 'All votes have been reset successfully',
+            stats: {
+                usersReset: updatedUsers.length,
+                votesCleared: votes.length
+            }
+        });
+
+    } catch (error) {
+        console.error('='.repeat(50));
+        console.error('VOTE RESET ERROR');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('='.repeat(50));
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to reset votes: ' + error.message 
+        });
+    }
+});
+
 module.exports = router;
