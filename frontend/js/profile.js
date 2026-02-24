@@ -6,10 +6,15 @@ const API_URL = (function() {
     return '';
 })();
 
+// ==================== HELPER FUNCTIONS (DEFINED FIRST) ====================
+
 // Check if user is logged in
 function checkAuth() {
     const userEmail = localStorage.getItem('userEmail');
-    if (!userEmail) {
+    const token = localStorage.getItem('token');
+    
+    if (!userEmail || !token) {
+        console.log('Auth check failed: No user email or token');
         window.location.href = 'login.html';
         return false;
     }
@@ -100,6 +105,49 @@ function updatePasswordStrength(password) {
     }
 }
 
+// Update navigation based on auth state (DEFINED BEFORE USE)
+function updateNavAuth() {
+    const navAuth = document.getElementById('navAuth');
+    const userEmail = localStorage.getItem('userEmail');
+    
+    if (navAuth) {
+        if (userEmail) {
+            navAuth.innerHTML = `
+                <div class="user-info">
+                    <span>
+                        <i class="fas fa-user-circle me-2"></i>
+                        ${userEmail.split('@')[0] || 'User'}
+                    </span>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
+                </div>
+            `;
+        } else {
+            navAuth.innerHTML = `
+                <a href="login.html" class="nav-link login-btn-nav">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            `;
+        }
+    }
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('token');
+    localStorage.removeItem('hasVoted');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('adminName');
+    localStorage.removeItem('adminRole');
+    window.location.href = 'index.html';
+}
+
+// ==================== API FUNCTIONS ====================
+
 // Fetch user's voting status from backend
 async function fetchUserVotingStatus(email) {
     try {
@@ -130,62 +178,10 @@ async function fetchUserVotingHistory(email) {
     }
 }
 
-// Load user profile data
-async function loadUserProfile() {
-    if (!checkAuth()) return;
-    
-    const email = localStorage.getItem('userEmail');
-    
-    try {
-        // Fetch actual voting status from backend
-        const hasVoted = await fetchUserVotingStatus(email);
-        localStorage.setItem('hasVoted', hasVoted ? 'true' : 'false');
-        
-        // For now, we'll use mock user data since we need a profile endpoint
-        // In production, you'd fetch from: `${API_URL}/api/auth/profile`
-        
-        const mockUserData = {
-            name: localStorage.getItem('userName') || email.split('@')[0],
-            email: email,
-            createdAt: '2024-01-15T10:30:00.000Z'
-        };
-        
-        // Update profile display
-        document.getElementById('profileName').textContent = mockUserData.name;
-        document.getElementById('profileEmail').textContent = mockUserData.email;
-        document.getElementById('fullName').value = mockUserData.name;
-        document.getElementById('displayEmail').value = mockUserData.email;
-        
-        // Format date
-        const createdDate = new Date(mockUserData.createdAt);
-        document.getElementById('accountCreated').value = createdDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        
-        // Update voting status based on ACTUAL backend data
-        const statusBadge = document.getElementById('votingStatusBadge');
-        if (hasVoted) {
-            statusBadge.textContent = '✓ You have voted';
-            statusBadge.className = 'badge badge-success';
-        } else {
-            statusBadge.textContent = '○ You have not voted yet';
-            statusBadge.className = 'badge badge-warning';
-        }
-        
-        // Load voting history
-        loadVotingHistory(email, hasVoted);
-        
-    } catch (error) {
-        console.error('Error loading profile:', error);
-        showAlert('Failed to load profile data', 'danger');
-    }
-}
-
 // Load voting history
 async function loadVotingHistory(email, hasVoted) {
     const historyDiv = document.getElementById('votingHistory');
+    if (!historyDiv) return;
     
     if (!hasVoted) {
         historyDiv.innerHTML = `
@@ -232,205 +228,7 @@ async function loadVotingHistory(email, hasVoted) {
     }
 }
 
-// Save profile changes
-async function saveProfileChanges(event) {
-    event.preventDefault();
-    
-    const saveBtn = document.getElementById('saveInfoBtn');
-    const newName = document.getElementById('fullName').value.trim();
-    const email = localStorage.getItem('userEmail');
-    
-    if (!newName) {
-        showAlert('Name cannot be empty', 'danger');
-        return;
-    }
-    
-    setLoading(saveBtn, true, 'Save Changes');
-    
-    try {
-        // In production: await fetch(`${API_URL}/api/auth/profile`, {...})
-        // Mock successful update for now
-        
-        localStorage.setItem('userName', newName);
-        document.getElementById('profileName').textContent = newName;
-        
-        showAlert('Profile updated successfully!', 'success');
-    } catch (error) {
-        console.error('Error saving profile:', error);
-        showAlert('Failed to update profile', 'danger');
-    } finally {
-        setLoading(saveBtn, false, 'Save Changes');
-    }
-}
-
-// Update password
-async function updatePassword(event) {
-    event.preventDefault();
-    
-    const saveBtn = document.getElementById('saveSecurityBtn');
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // Validate
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        showAlert('All password fields are required', 'danger');
-        return;
-    }
-    
-    if (newPassword !== confirmPassword) {
-        showAlert('New passwords do not match', 'danger');
-        return;
-    }
-    
-    if (newPassword.length < 8) {
-        showAlert('Password must be at least 8 characters long', 'danger');
-        return;
-    }
-    
-    setLoading(saveBtn, true, 'Update Password');
-    
-    try {
-        // In production: await fetch(`${API_URL}/api/auth/password`, {...})
-        
-        showAlert('Password updated successfully!', 'success');
-        
-        // Clear password fields
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-        updatePasswordStrength('');
-        
-    } catch (error) {
-        console.error('Error updating password:', error);
-        showAlert('Failed to update password. Please check your current password.', 'danger');
-    } finally {
-        setLoading(saveBtn, false, 'Update Password');
-    }
-}
-
-// Delete account - OPEN MODAL
-// Delete account - OPEN MODAL (FIXED)
-function deleteAccount() {
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    modal.show();
-}
-
-// Confirm delete account (FIXED - with better error handling)
-async function confirmDelete() {
-    const modalEl = document.getElementById('deleteModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    const deleteBtn = document.querySelector('#deleteModal .btn-danger');
-    const originalText = deleteBtn.innerHTML;
-    
-    try {
-        // Show loading state
-        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
-        deleteBtn.disabled = true;
-        
-        // Get token from localStorage
-        const token = localStorage.getItem('token');
-        const userEmail = localStorage.getItem('userEmail');
-        
-        console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
-        console.log('User email:', userEmail);
-        
-        if (!token) {
-            throw new Error('No authentication token found. Please log in again.');
-        }
-        
-        if (!userEmail) {
-            throw new Error('No user email found. Please log in again.');
-        }
-        
-        console.log(`Deleting account for: ${userEmail}`);
-        
-        // Call the backend to actually delete the account
-        const response = await fetch(`${API_URL}/api/auth/account`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        console.log('Delete response:', data);
-        
-        if (!response.ok) {
-            throw new Error(data.message || `Server error: ${response.status}`);
-        }
-        
-        if (data.success) {
-            // Clear ALL local storage
-            localStorage.clear();
-            
-            // Hide modal
-            if (modal) modal.hide();
-            
-            // Show success message
-            showAlert('Account deleted successfully. Redirecting...', 'success');
-            
-            // Redirect to home page
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
-        } else {
-            throw new Error(data.message || 'Failed to delete account');
-        }
-        
-    } catch (error) {
-        console.error('Error deleting account:', error);
-        
-        // Reset button
-        deleteBtn.innerHTML = originalText;
-        deleteBtn.disabled = false;
-        
-        // Show error message
-        showAlert('Failed to delete account: ' + error.message, 'danger');
-        
-        // Hide modal if it exists
-        if (modal) modal.hide();
-    }
-}
-
-// Also update the checkAuth function to verify token exists
-function checkAuth() {
-    const userEmail = localStorage.getItem('userEmail');
-    const token = localStorage.getItem('token');
-    
-    if (!userEmail || !token) {
-        console.log('Auth check failed: No user email or token');
-        window.location.href = 'login.html';
-        return false;
-    }
-    return true;
-}
-
-// Add a function to verify token with backend (optional)
-async function verifyTokenWithBackend() {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-    
-    try {
-        const response = await fetch(`${API_URL}/api/auth/profile`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            return data.success;
-        }
-        return false;
-    } catch (error) {
-        console.error('Token verification failed:', error);
-        return false;
-    }
-}
-
-// Update loadUserProfile to use token
+// Load user profile data
 async function loadUserProfile() {
     if (!checkAuth()) return;
     
@@ -513,19 +311,201 @@ async function loadUserProfile() {
     }
 }
 
+// ==================== FORM SUBMISSION FUNCTIONS ====================
 
-// Logout function
-function logout() {
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('token');
-    localStorage.removeItem('hasVoted');
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminName');
-    localStorage.removeItem('adminRole');
-    window.location.href = 'index.html';
+// Save profile changes
+async function saveProfileChanges(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('saveInfoBtn');
+    const newName = document.getElementById('fullName').value.trim();
+    const email = localStorage.getItem('userEmail');
+    const token = localStorage.getItem('token');
+    
+    if (!newName) {
+        showAlert('Name cannot be empty', 'danger');
+        return;
+    }
+    
+    setLoading(saveBtn, true, 'Save Changes');
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: newName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            localStorage.setItem('userName', newName);
+            document.getElementById('profileName').textContent = newName;
+            showAlert('Profile updated successfully!', 'success');
+        } else {
+            throw new Error(data.message || 'Failed to update profile');
+        }
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showAlert('Failed to update profile: ' + error.message, 'danger');
+    } finally {
+        setLoading(saveBtn, false, 'Save Changes');
+    }
 }
+
+// Update password
+async function updatePassword(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('saveSecurityBtn');
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const token = localStorage.getItem('token');
+    
+    // Validate
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showAlert('All password fields are required', 'danger');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('New passwords do not match', 'danger');
+        return;
+    }
+    
+    if (newPassword.length < 8) {
+        showAlert('Password must be at least 8 characters long', 'danger');
+        return;
+    }
+    
+    setLoading(saveBtn, true, 'Update Password');
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('Password updated successfully!', 'success');
+            
+            // Clear password fields
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            updatePasswordStrength('');
+        } else {
+            throw new Error(data.message || 'Failed to update password');
+        }
+    } catch (error) {
+        console.error('Error updating password:', error);
+        showAlert('Failed to update password: ' + error.message, 'danger');
+    } finally {
+        setLoading(saveBtn, false, 'Update Password');
+    }
+}
+
+// ==================== DELETE ACCOUNT FUNCTIONS ====================
+
+// Delete account - OPEN MODAL
+function deleteAccount() {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Confirm delete account
+async function confirmDelete() {
+    const modalEl = document.getElementById('deleteModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    const deleteBtn = document.querySelector('#deleteModal .btn-danger');
+    const originalText = deleteBtn ? deleteBtn.innerHTML : 'Yes, Delete My Account';
+    
+    try {
+        // Show loading state
+        if (deleteBtn) {
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+            deleteBtn.disabled = true;
+        }
+        
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
+        console.log('User email:', userEmail);
+        
+        if (!token) {
+            throw new Error('No authentication token found. Please log in again.');
+        }
+        
+        if (!userEmail) {
+            throw new Error('No user email found. Please log in again.');
+        }
+        
+        console.log(`Deleting account for: ${userEmail}`);
+        
+        // Call the backend to actually delete the account
+        const response = await fetch(`${API_URL}/api/auth/account`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        console.log('Delete response:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.message || `Server error: ${response.status}`);
+        }
+        
+        if (data.success) {
+            // Clear ALL local storage
+            localStorage.clear();
+            
+            // Hide modal
+            if (modal) modal.hide();
+            
+            // Show success message
+            showAlert('Account deleted successfully. Redirecting...', 'success');
+            
+            // Redirect to home page
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        } else {
+            throw new Error(data.message || 'Failed to delete account');
+        }
+        
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        
+        // Reset button
+        if (deleteBtn) {
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.disabled = false;
+        }
+        
+        // Show error message
+        showAlert('Failed to delete account: ' + error.message, 'danger');
+        
+        // Hide modal if it exists
+        if (modal) modal.hide();
+    }
+}
+
+// ==================== INITIALIZATION ====================
 
 // Initialize Bootstrap tabs properly
 function initializeTabs() {
@@ -562,13 +542,16 @@ function initializeTabs() {
     });
 }
 
-// Initialize page
+// ==================== DOM CONTENT LOADED ====================
+
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Profile page loaded');
+    
     // Check authentication
     if (!checkAuth()) return;
     
     // Update navigation
-    updateNavAuth();
+    updateNavAuth(); // Now this is defined before it's called
     
     // Initialize tabs
     initializeTabs();
@@ -577,31 +560,44 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserProfile();
     
     // Setup form submissions
-    document.getElementById('profileInfoForm').addEventListener('submit', saveProfileChanges);
-    document.getElementById('profileSecurityForm').addEventListener('submit', updatePassword);
+    const infoForm = document.getElementById('profileInfoForm');
+    if (infoForm) {
+        infoForm.addEventListener('submit', saveProfileChanges);
+    }
+    
+    const securityForm = document.getElementById('profileSecurityForm');
+    if (securityForm) {
+        securityForm.addEventListener('submit', updatePassword);
+    }
     
     // Password strength checker
-    document.getElementById('newPassword').addEventListener('input', (e) => {
-        updatePasswordStrength(e.target.value);
-    });
+    const newPasswordInput = document.getElementById('newPassword');
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', (e) => {
+            updatePasswordStrength(e.target.value);
+        });
+    }
     
     // Password match checker
-    document.getElementById('confirmPassword').addEventListener('input', (e) => {
-        const newPass = document.getElementById('newPassword').value;
-        const confirmPass = e.target.value;
-        const matchEl = document.getElementById('passwordMatch');
-        
-        if (!confirmPass) {
-            matchEl.textContent = '';
-            matchEl.className = 'password-match';
-        } else if (newPass === confirmPass) {
-            matchEl.textContent = '✓ Passwords match';
-            matchEl.className = 'password-match valid';
-        } else {
-            matchEl.textContent = '✗ Passwords do not match';
-            matchEl.className = 'password-match invalid';
-        }
-    });
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', (e) => {
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = e.target.value;
+            const matchEl = document.getElementById('passwordMatch');
+            
+            if (!confirmPass) {
+                matchEl.textContent = '';
+                matchEl.className = 'password-match';
+            } else if (newPass === confirmPass) {
+                matchEl.textContent = '✓ Passwords match';
+                matchEl.className = 'password-match valid';
+            } else {
+                matchEl.textContent = '✗ Passwords do not match';
+                matchEl.className = 'password-match invalid';
+            }
+        });
+    }
 });
 
 // Make functions global for onclick handlers
