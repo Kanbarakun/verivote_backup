@@ -1,9 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const fileHandler = require('../utils/fileHandler');
 
-// --- REGISTRATION ---
+// ==================== MIDDLEWARE ====================
+
+// Token verification middleware - MUST BE DEFINED BEFORE USE
+const verifyToken = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+};
+
+// Log activity helper
+async function logActivity(actor, action, details) {
+    try {
+        let activities = await fileHandler.read('activities');
+        if (!Array.isArray(activities)) {
+            activities = [];
+        }
+        
+        activities.push({
+            admin: actor,
+            action,
+            details,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Keep only last 100 activities
+        if (activities.length > 100) {
+            activities = activities.slice(-100);
+        }
+        
+        await fileHandler.write('activities', activities);
+    } catch (error) {
+        console.error('Failed to log activity:', error);
+    }
+}
+
+// ==================== AUTH ROUTES ====================
+
+// REGISTER - Create new user
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -12,76 +60,59 @@ router.post('/register', async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({ 
                 success: false, 
-                message: "All fields are required" 
+                message: 'Name, email, and password are required' 
             });
         }
 
-        console.log('Registration attempt:', { name, email });
+        // Read existing users
+        let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
         
-        // 1. Read existing users with error handling
-        let users = [];
-        try {
-            users = await fileHandler.read('users') || [];
-            // Ensure users is an array
-            if (!Array.isArray(users)) {
-                console.log('Users data was not an array, resetting to empty array');
-                users = [];
-            }
-        } catch (readError) {
-            console.error('Error reading users:', readError);
-            users = [];
-        }
-
-        // 2. Check duplicates (with safe navigation)
-        const existingUser = users.find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
-        if (existingUser) {
+        // Check if user already exists
+        if (users.find(u => u && u.email === email)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "User already exists" 
+                message: 'User already exists' 
             });
         }
 
-        // 3. Hash Password
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // 4. Create User Object
+        
+        // Create new user object
         const newUser = {
-            id: Date.now().toString(), // Add unique ID
             name,
-            email: email.toLowerCase(), // Store email in lowercase
+            email,
             password: hashedPassword,
             hasVoted: false,
-            registeredAt: new Date().toISOString()
+            createdAt: new Date().toISOString()
         };
 
+        // Save to JSONBin
         users.push(newUser);
-
-        // 5. Save to JSONBin
         const saved = await fileHandler.write('users', users);
 
-        if (saved) {
-            console.log('User registered successfully:', email);
-            res.json({ 
-                success: true, 
-                message: "Registration successful!" 
-            });
-        } else {
-            console.error('Failed to save user to JSONBin');
-            res.status(500).json({ 
-                success: false, 
-                message: "Failed to save to cloud. Please try again." 
-            });
+        if (!saved) {
+            throw new Error('Failed to save user to database');
         }
+
+        // Log activity
+        await logActivity('system', 'User registered', `New user registered: ${email}`);
+
+        res.json({ 
+            success: true, 
+            message: 'User registered successfully' 
+        });
     } catch (error) {
-        console.error("Register Error:", error);
+        console.error('Registration error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error during registration" 
+            message: 'Registration failed: ' + error.message 
         });
     }
 });
 
-// --- LOGIN ---
+// LOGIN - Authenticate user
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -90,173 +121,121 @@ router.post('/login', async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Email and password are required" 
+                message: 'Email and password are required' 
             });
         }
 
-        const normalizedEmail = email.toLowerCase();
-        console.log('Login attempt for:', normalizedEmail);
+        // Read users from database
+        let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
         
-        // Read users with error handling
-        let users = [];
-        try {
-            users = await fileHandler.read('users') || [];
-            // Ensure users is an array
-            if (!Array.isArray(users)) {
-                console.log('Users data was not an array, resetting to empty array');
-                users = [];
-                // Save the fixed empty array back to JSONBin
-                await fileHandler.write('users', []);
-            }
-        } catch (readError) {
-            console.error('Error reading users:', readError);
-            users = [];
-        }
-
-        console.log(`Found ${users.length} users in database`);
-        
-        // Filter out any invalid user objects and find the user
-        const validUsers = users.filter(u => u && typeof u === 'object');
-        const user = validUsers.find(u => u.email && u.email.toLowerCase() === normalizedEmail);
+        // Find user by email
+        const user = users.find(u => u && u.email === email);
         
         if (!user) {
-            console.log('User not found:', normalizedEmail);
-            console.log('Available emails:', validUsers.map(u => u.email).filter(Boolean));
             return res.status(401).json({ 
                 success: false, 
-                message: "User not found" 
+                message: 'Invalid email or password' 
             });
         }
-        
-        // Check if user has password field
-        if (!user.password) {
-            console.log('User has no password field:', normalizedEmail);
+
+        // Verify password
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
             return res.status(401).json({ 
                 success: false, 
-                message: "Invalid user data" 
+                message: 'Invalid email or password' 
             });
         }
-        
-        // Compare passwords
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        
-        if (!isPasswordValid) {
-            console.log('Invalid password for:', normalizedEmail);
-            return res.status(401).json({ 
-                success: false, 
-                message: "Invalid password" 
-            });
-        }
-        
-        console.log('Login successful for:', normalizedEmail);
-        
-        // Return user info (never send password back!)
+
+        // Create JWT token
+        const token = jwt.sign(
+            { 
+                email: user.email, 
+                name: user.name,
+                hasVoted: user.hasVoted 
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
+
+        // Log activity
+        await logActivity(user.email, 'User login', `User logged in: ${email}`);
+
         res.json({ 
             success: true, 
-            message: "Login successful",
+            message: 'Login successful',
+            token,
             email: user.email,
-            userName: user.name || email.split('@')[0]
+            userName: user.name,
+            hasVoted: user.hasVoted
         });
-        
     } catch (error) {
         console.error('Login error:', error);
-        console.error('Error stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            message: "Server error during login" 
+            message: 'Login failed: ' + error.message 
         });
     }
 });
 
-// --- FIX DATA ENDPOINT - Run this once to clean up your JSONBin data ---
-router.post('/fix-data', async (req, res) => {
-    try {
-        const users = await fileHandler.read('users') || [];
-        
-        // Filter out invalid users and ensure all have required fields
-        const fixedUsers = users
-            .filter(u => u && typeof u === 'object')
-            .map(u => {
-                // Ensure each user has all required fields
-                return {
-                    id: u.id || Date.now().toString(),
-                    name: u.name || u.fullName || 'Unknown',
-                    email: u.email ? u.email.toLowerCase() : null,
-                    password: u.password || '',
-                    hasVoted: u.hasVoted === true,
-                    registeredAt: u.registeredAt || new Date().toISOString()
-                };
-            })
-            .filter(u => u.email); // Remove any users without email
-        
-        // Save fixed data back to JSONBin
-        await fileHandler.write('users', fixedUsers);
-        
-        res.json({ 
-            success: true, 
-            message: `Fixed ${users.length - fixedUsers.length} invalid users`,
-            originalCount: users.length,
-            fixedCount: fixedUsers.length,
-            users: fixedUsers.map(u => ({ email: u.email, hasVoted: u.hasVoted }))
-        });
-    } catch (error) {
-        console.error('Fix data error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// --- CHECK USER ENDPOINT - To verify user exists ---
-router.post('/check-user', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const users = await fileHandler.read('users') || [];
-        const validUsers = users.filter(u => u && typeof u === 'object');
-        const user = validUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-        
-        res.json({
-            exists: !!user,
-            email: email,
-            storedEmail: user ? user.email : null,
-            hasVoted: user ? user.hasVoted : null,
-            totalUsers: validUsers.length
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE /api/auth/account - DELETE user account
-router.delete('/account', verifyToken, async (req, res) => {
+// GET PROFILE - Get user profile (protected route)
+router.get('/profile', verifyToken, async (req, res) => {
     try {
         const { email } = req.user;
         
-        // READ users
+        // Read users from database
         let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
         
-        // FILTER OUT the user (DELETE operation)
-        users = users.filter(u => u.email !== email);
+        // Find user by email
+        const user = users.find(u => u && u.email === email);
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
 
-        // SAVE updated users array
-        await fileHandler.write('users', users);
-
+        // Return user data (excluding password)
         res.json({ 
             success: true, 
-            message: 'Account deleted successfully' 
+            user: {
+                name: user.name,
+                email: user.email,
+                hasVoted: user.hasVoted,
+                createdAt: user.createdAt
+            }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch profile: ' + error.message 
+        });
     }
 });
 
-        // /api/auth/profile - UPDATE user profile
+// UPDATE PROFILE - Update user name (protected route)
 router.put('/profile', verifyToken, async (req, res) => {
     try {
-        const { email } = req.user; // From token
-        const { name, newPassword } = req.body;
+        const { email } = req.user;
+        const { name } = req.body;
         
-        // READ users
-        const users = await fileHandler.read('users') || [];
-        const userIndex = users.findIndex(u => u.email === email);
+        if (!name) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Name is required' 
+            });
+        }
+
+        // Read users from database
+        let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
+        
+        // Find user index
+        const userIndex = users.findIndex(u => u && u.email === email);
         
         if (userIndex === -1) {
             return res.status(404).json({ 
@@ -265,28 +244,108 @@ router.put('/profile', verifyToken, async (req, res) => {
             });
         }
 
-        // UPDATE user information
-        if (name) users[userIndex].name = name;
-        
-        if (newPassword) {
-            users[userIndex].password = await bcrypt.hash(newPassword, 10);
-        }
-        
+        // Update user name
+        users[userIndex].name = name;
         users[userIndex].updatedAt = new Date().toISOString();
 
-        // SAVE updated users array
-        await fileHandler.write('users', users);
+        // Save to JSONBin
+        const saved = await fileHandler.write('users', users);
+
+        if (!saved) {
+            throw new Error('Failed to save user data');
+        }
+
+        // Log activity
+        await logActivity(email, 'Profile updated', `User updated their name`);
 
         res.json({ 
             success: true, 
-            message: 'Profile updated successfully' 
+            message: 'Profile updated successfully',
+            name: name
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Profile update error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update profile: ' + error.message 
+        });
     }
 });
 
-// DELETE /api/auth/account - DELETE user account
+// UPDATE PASSWORD - Change user password (protected route)
+router.put('/password', verifyToken, async (req, res) => {
+    try {
+        const { email } = req.user;
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Current password and new password are required' 
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'New password must be at least 8 characters long' 
+            });
+        }
+
+        // Read users from database
+        let users = await fileHandler.read('users') || [];
+        if (!Array.isArray(users)) users = [];
+        
+        // Find user index
+        const userIndex = users.findIndex(u => u && u.email === email);
+        
+        if (userIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        // Verify current password
+        const validPassword = await bcrypt.compare(currentPassword, users[userIndex].password);
+        if (!validPassword) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Current password is incorrect' 
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Update password
+        users[userIndex].password = hashedPassword;
+        users[userIndex].updatedAt = new Date().toISOString();
+
+        // Save to JSONBin
+        const saved = await fileHandler.write('users', users);
+
+        if (!saved) {
+            throw new Error('Failed to save user data');
+        }
+
+        // Log activity
+        await logActivity(email, 'Password changed', `User changed their password`);
+
+        res.json({ 
+            success: true, 
+            message: 'Password updated successfully' 
+        });
+    } catch (error) {
+        console.error('Password update error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update password: ' + error.message 
+        });
+    }
+});
+
+// DELETE ACCOUNT - Permanently delete user account (protected route)
 router.delete('/account', verifyToken, async (req, res) => {
     try {
         const { email } = req.user; // From JWT token
@@ -313,7 +372,7 @@ router.delete('/account', verifyToken, async (req, res) => {
         let votes = await fileHandler.read('votes') || [];
         if (!Array.isArray(votes)) votes = [];
         
-        // Also remove user's voting records (optional - you might want to keep for audit)
+        // Also remove user's voting records
         const updatedVotes = votes.filter(v => v && v.voterEmail !== email);
         
         // Save both updated arrays
@@ -343,20 +402,14 @@ router.delete('/account', verifyToken, async (req, res) => {
     }
 });
 
-// Token verification middleware
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'No token provided' });
-    }
+// LOGOUT - Invalidate token (client-side, but we can add server-side if needed)
+router.post('/logout', verifyToken, (req, res) => {
+    // With JWT, we don't need server-side logout
+    // Just inform client to remove token
+    res.json({ 
+        success: true, 
+        message: 'Logged out successfully' 
+    });
+});
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ success: false, message: 'Invalid token' });
-    }
-};
 module.exports = router;
