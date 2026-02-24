@@ -105,7 +105,7 @@ function updatePasswordStrength(password) {
     }
 }
 
-// Update navigation based on auth state (DEFINED BEFORE USE)
+// Update navigation based on auth state
 function updateNavAuth() {
     const navAuth = document.getElementById('navAuth');
     const userEmail = localStorage.getItem('userEmail');
@@ -319,7 +319,6 @@ async function saveProfileChanges(event) {
     
     const saveBtn = document.getElementById('saveInfoBtn');
     const newName = document.getElementById('fullName').value.trim();
-    const email = localStorage.getItem('userEmail');
     const token = localStorage.getItem('token');
     
     if (!newName) {
@@ -417,13 +416,19 @@ async function updatePassword(event) {
 
 // ==================== DELETE ACCOUNT FUNCTIONS ====================
 
-// Delete account - OPEN MODAL
-function deleteAccount() {
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    modal.show();
+// Open delete confirmation modal (FIXED - This is called when clicking Delete Account)
+function openDeleteModal() {
+    console.log('Opening delete modal');
+    const modalEl = document.getElementById('deleteModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        console.error('Delete modal not found');
+    }
 }
 
-// Confirm delete account
+// Confirm delete account (FIXED - This is called from the modal)
 async function confirmDelete() {
     const modalEl = document.getElementById('deleteModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
@@ -505,38 +510,46 @@ async function confirmDelete() {
     }
 }
 
-// ==================== INITIALIZATION ====================
+// ==================== TAB FUNCTIONS (FIXED) ====================
 
 // Initialize Bootstrap tabs properly
 function initializeTabs() {
     // Get all tab buttons
     const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
     
-    // Add click event to each tab
+    // Remove any existing Bootstrap tab initialization
+    // and add our own smooth scroll behavior
     tabButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Remove active class from all tabs
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-selected', 'false');
-            });
-            
-            // Add active class to clicked tab
-            this.classList.add('active');
-            this.setAttribute('aria-selected', 'true');
-            
-            // Hide all tab panes
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('show', 'active');
-            });
-            
-            // Show selected tab pane
+            // Get the target tab pane id
             const targetId = this.getAttribute('data-bs-target');
             const targetPane = document.querySelector(targetId);
+            
             if (targetPane) {
+                // Remove active class from all tabs and panes
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Add active class to clicked tab and corresponding pane
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
                 targetPane.classList.add('show', 'active');
+                
+                // Smooth scroll to the tab content
+                setTimeout(() => {
+                    targetPane.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }, 100);
             }
         });
     });
@@ -551,9 +564,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!checkAuth()) return;
     
     // Update navigation
-    updateNavAuth(); // Now this is defined before it's called
+    updateNavAuth();
     
-    // Initialize tabs
+    // Initialize tabs (FIXED - now with smooth scroll)
     initializeTabs();
     
     // Load user profile
@@ -600,60 +613,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Open delete confirmation modal
-function openDeleteModal() {
-    const modal = new bootstrap.Modal(
-        document.getElementById("deleteModal")
-    );
-
-    modal.show();
-}
-
-// Confirm delete account
-async function confirmDelete() {
-
-    try {
-
-        const token = localStorage.getItem("token");
-
-        const response = await fetch(
-            "https://verivote-backup.onrender.com/api/auth/delete",
-            {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            alert("Account deleted successfully");
-
-            // logout
-            localStorage.removeItem("token");
-
-            window.location.href = "index.html";
-
-        } else {
-
-            alert(data.message || "Delete failed");
-
-        }
-
-    } catch (err) {
-
-        alert("Server error");
-
-    }
-
-}
-
 // Make functions global for onclick handlers
 window.togglePassword = togglePassword;
-window.deleteAccount = deleteAccount;
+window.openDeleteModal = openDeleteModal; // FIXED: Changed from deleteAccount to openDeleteModal
 window.confirmDelete = confirmDelete;
 window.logout = logout;
