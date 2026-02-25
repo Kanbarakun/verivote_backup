@@ -871,6 +871,9 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
         // Clear all votes - set to empty array
         const updatedVotes = [];
         
+        console.log('Updated users sample:', updatedUsers[0] ? 'User preserved' : 'No users');
+        console.log('Updated votes count:', updatedVotes.length);
+        
         // Save to JSONBin
         console.log('Saving updated users...');
         const usersSaved = await fileHandler.write('users', updatedUsers);

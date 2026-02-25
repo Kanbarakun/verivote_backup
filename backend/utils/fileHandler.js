@@ -32,10 +32,13 @@ const fileHandler = {
         try {
             console.log(`📖 Reading from ${type} bin...`);
             const response = await axios.get(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-                headers: { 'X-Master-Key': API_KEY }
+                headers: { 
+                    'X-Master-Key': API_KEY,
+                    'X-Bin-Meta': 'false' // This returns just the data without metadata
+                }
             });
             console.log(`✅ Read from ${type} successful`);
-            return response.data.record;
+            return response.data;
         } catch (err) {
             console.error(`❌ Cloud Read Error (${type}):`, {
                 status: err.response?.status,
@@ -57,11 +60,17 @@ const fileHandler = {
         try {
             console.log(`📝 Writing to ${type} bin...`);
             console.log(`Bin ID: ${binId}`);
+            console.log(`Data type: ${typeof data}`);
+            console.log(`Is Array: ${Array.isArray(data)}`);
+            console.log(`Data length: ${data ? data.length : 0}`);
             
+            // IMPORTANT: For JSONBin v3 API, we need to send the data directly
+            // No need to wrap it, just send the raw data
             const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY
+                    'X-Master-Key': API_KEY,
+                    'X-Bin-Versioning': 'false' // Disable versioning to simplify
                 }
             });
             
@@ -71,9 +80,17 @@ const fileHandler = {
             console.error(`❌ Cloud Write Error (${type}):`, {
                 status: err.response?.status,
                 statusText: err.response?.statusText,
+                data: err.response?.data,
                 message: err.message,
-                binId: binId // This will show us if binId is undefined
+                binId: binId
             });
+            
+            // Log more details about what we tried to send
+            if (err.response?.status === 400) {
+                console.error('Bad Request - The data format might be invalid');
+                console.error('Data being sent:', JSON.stringify(data).substring(0, 200) + '...');
+            }
+            
             return false;
         }
     }
