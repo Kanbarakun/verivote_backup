@@ -836,53 +836,72 @@ router.post('/settings', verifyAdmin, async (req, res) => {
     }
 });
 
-// DIRECT RESET - NO FILEHANDLER
+
+// Reset all votes (clear votes and reset user voting status)
 router.post('/reset-votes', verifyAdmin, async (req, res) => {
     try {
-        console.log('🔄 DIRECT RESET ATTEMPT');
+        console.log('='.repeat(50));
+        console.log('🔄 RESET VOTES ATTEMPT');
+        console.log('Admin:', req.admin.email);
+        console.log('='.repeat(50));
         
-        const axios = require('axios');
-        const binId = process.env.BIN_ID_VOTES;
-        const apiKey = process.env.JSONBIN_API_KEY;
+        // Read current data
+        const users = await fileHandler.read('users') || [];
+        const votes = await fileHandler.read('votes') || [];
         
-        if (!binId) throw new Error('Missing BIN_ID_VOTES');
-        if (!apiKey) throw new Error('Missing JSONBIN_API_KEY');
+        // Ensure arrays
+        const usersArray = Array.isArray(users) ? users : [];
+        const votesArray = Array.isArray(votes) ? votes : [];
         
-        console.log('Bin ID:', binId);
-        console.log('API Key exists:', !!apiKey);
+        console.log(`Before reset - Users: ${usersArray.length}, Votes: ${votesArray.length}`);
         
-        // DIRECT API CALL TO JSONBIN
-        const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, [], {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': apiKey
+        // Reset all users' voting status
+        const updatedUsers = usersArray.map(user => {
+            if (user && typeof user === 'object') {
+                return {
+                    ...user,
+                    hasVoted: false,
+                    updatedAt: new Date().toISOString()
+                };
             }
+            return user;
         });
         
-        console.log('✅ JSONBin Response:', response.status);
+        // Clear all votes - send empty array (fileHandler will wrap it)
+        const updatedVotes = [];
         
-        // Also reset users' hasVoted status
-        const users = await require('../utils/fileHandler').read('users') || [];
-        const updatedUsers = users.map(u => ({ ...u, hasVoted: false }));
-        await require('../utils/fileHandler').write('users', updatedUsers);
+        console.log('Saving updated users...');
+        const usersSaved = await fileHandler.write('users', updatedUsers);
+        console.log('Users saved:', usersSaved);
+        
+        console.log('Saving cleared votes...');
+        const votesSaved = await fileHandler.write('votes', updatedVotes);
+        console.log('Votes saved:', votesSaved);
+        
+        if (!usersSaved || !votesSaved) {
+            throw new Error('Failed to save data');
+        }
+        
+        // Log activity
+        await logActivity(req.admin.email, 'Reset votes', `Reset all votes (cleared ${votesArray.length} votes, reset ${usersArray.length} users)`);
+        
+        console.log('✅ VOTE RESET SUCCESSFUL');
+        console.log('='.repeat(50));
         
         res.json({ 
             success: true, 
-            message: 'Reset successful',
-            status: response.status
+            message: 'All votes have been reset successfully',
+            stats: {
+                usersReset: updatedUsers.length,
+                votesCleared: votesArray.length
+            }
         });
-        
+
     } catch (error) {
-        console.error('❌ Reset failed:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-        });
-        
+        console.error('❌ VOTE RESET ERROR:', error);
         res.status(500).json({ 
             success: false, 
-            message: error.message,
-            details: error.response?.data
+            message: error.message 
         });
     }
 });
