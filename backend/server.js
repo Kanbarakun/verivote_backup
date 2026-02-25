@@ -166,6 +166,42 @@ app.get('/api/debug/reset-test', async (req, res) => {
     }
 });
 
+// Add this temporary debug endpoint
+app.get('/api/debug/test-write', async (req, res) => {
+    try {
+        const fileHandler = require('./utils/fileHandler');
+        
+        // Test reading first
+        console.log('Testing read...');
+        const votes = await fileHandler.read('votes');
+        console.log('Current votes:', votes);
+        
+        // Test writing a small test object
+        console.log('Testing write...');
+        const testData = [{ test: true, timestamp: new Date().toISOString() }];
+        const writeResult = await fileHandler.write('votes', testData);
+        
+        // Read back to verify
+        const verifyRead = await fileHandler.read('votes');
+        
+        res.json({
+            success: true,
+            readBefore: votes ? 'Success' : 'Failed',
+            writeResult: writeResult,
+            readAfter: verifyRead ? 'Success' : 'Failed',
+            dataLength: verifyRead ? verifyRead.length : 0,
+            message: 'Check server logs for details'
+        });
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            stack: error.stack 
+        });
+    }
+});
+
 app.get('/admin-login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
