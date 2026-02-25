@@ -13,27 +13,33 @@ const BINS = {
     activities: process.env.BIN_ID_ACTIVITIES
 };
 
+// Log which bins are configured on startup
+console.log('=== JSONBin Configuration ===');
+Object.keys(BINS).forEach(key => {
+    console.log(`${key}: ${BINS[key] ? '✅ Configured' : '❌ MISSING'}`);
+});
+console.log('============================');
+
 const fileHandler = {
     read: async (type) => {
         const binId = BINS[type];
         
         if (!binId) {
-            console.error(`Error: Bin ID for "${type}" is missing! Check your .env file.`);
+            console.error(`❌ Error: Bin ID for "${type}" is missing! Check your .env file.`);
             return [];
         }
 
         try {
-            console.log(`Reading from ${type} bin...`);
+            console.log(`📖 Reading from ${type} bin...`);
             const response = await axios.get(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
                 headers: { 'X-Master-Key': API_KEY }
             });
-            console.log(`Read from ${type} successful`);
+            console.log(`✅ Read from ${type} successful`);
             return response.data.record;
         } catch (err) {
-            console.error(`Cloud Read Error (${type}):`, {
+            console.error(`❌ Cloud Read Error (${type}):`, {
                 status: err.response?.status,
                 statusText: err.response?.statusText,
-                data: err.response?.data,
                 message: err.message
             });
             return [];
@@ -42,15 +48,15 @@ const fileHandler = {
 
     write: async (type, data) => {
         const binId = BINS[type];
+        
         if (!binId) {
-            console.error(`Write Error: No bin ID for ${type}`);
+            console.error(`❌ Write Error: No bin ID for ${type}`);
             return false;
         }
 
         try {
-            console.log(`Writing to ${type} bin...`);
-            console.log(`Data size: ${JSON.stringify(data).length} bytes`);
-            console.log(`Data preview:`, JSON.stringify(data).substring(0, 200) + '...');
+            console.log(`📝 Writing to ${type} bin...`);
+            console.log(`Bin ID: ${binId}`);
             
             const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
                 headers: {
@@ -59,22 +65,15 @@ const fileHandler = {
                 }
             });
             
-            console.log(`Write to ${type} successful:`, response.status);
+            console.log(`✅ Write to ${type} successful:`, response.status);
             return true;
         } catch (err) {
-            console.error(`Cloud Write Error (${type}):`, {
+            console.error(`❌ Cloud Write Error (${type}):`, {
                 status: err.response?.status,
                 statusText: err.response?.statusText,
-                data: err.response?.data,
                 message: err.message,
-                stack: err.stack
+                binId: binId // This will show us if binId is undefined
             });
-            
-            // Log the full error for debugging
-            if (err.response) {
-                console.error('Full error response:', JSON.stringify(err.response.data, null, 2));
-            }
-            
             return false;
         }
     }
