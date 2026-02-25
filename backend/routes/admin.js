@@ -867,7 +867,7 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
         });
         
         // FIX: Always send an empty array [] - NEVER send null or undefined
-        const updatedVotes = []; // This is a valid JSON array
+        const updatedVotes = {}; // This is a valid JSON array
         
         console.log('Saving updated users...');
         console.log('Users data structure:', JSON.stringify(updatedUsers).substring(0, 200) + '...');
