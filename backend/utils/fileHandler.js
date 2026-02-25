@@ -23,7 +23,7 @@ const fileHandler = {
         }
 
         try {
-            const response = await axios.get(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+            const response   = await axios.get(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
                 headers: { 'X-Master-Key': API_KEY }
             });
             return response.data.record;
@@ -35,22 +35,35 @@ const fileHandler = {
     },
 
     write: async (type, data) => {
-        const binId = BINS[type];
-        if (!binId) return false;
-
-        try {
-            await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY
-                }
-            });
-            return true;
-        } catch (err) {
-            console.error(`Cloud Write Error (${type}):`, err.response?.data?.message || err.message);
-            return false;
-        }
+    const binId = BINS[type];
+    if (!binId) {
+        console.error(`Write Error: No bin ID for ${type}`);
+        return false;
     }
+
+    try {
+        console.log(`Writing to ${type} bin...`);
+        console.log(`Data size: ${JSON.stringify(data).length} bytes`);
+        
+        const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': API_KEY
+            }
+        });
+        
+        console.log(`Write to ${type} successful:`, response.status);
+        return true;
+    } catch (err) {
+        console.error(`Cloud Write Error (${type}):`, {
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            data: err.response?.data,
+            message: err.message
+        });
+        return false;
+    }
+}
 };
 
 module.exports = fileHandler;

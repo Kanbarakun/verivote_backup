@@ -1278,19 +1278,22 @@ async function confirmReset() {
             }
         });
         
+        // Check if response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
         const data = await response.json();
         console.log('Reset response:', data);
-        
-        if (!response.ok) {
-            throw new Error(data.message || `Server error: ${response.status}`);
-        }
         
         if (data.success) {
             // Hide modal
             if (modal) modal.hide();
             
             // Show success message
-            showSuccess('All votes have been reset successfully!');
+            showSuccess(`✅ Votes reset successfully! Cleared ${data.stats?.votesCleared || 0} votes.`);
             
             // Refresh dashboard stats
             if (document.getElementById('dashboard').classList.contains('active')) {
@@ -1315,7 +1318,7 @@ async function confirmReset() {
         }
         
         // Show error message
-        showError('Failed to reset votes: ' + error.message);
+        showError('❌ ' + error.message);
         
         // Hide modal
         if (modal) modal.hide();

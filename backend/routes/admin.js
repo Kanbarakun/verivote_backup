@@ -847,18 +847,18 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
         console.log('='.repeat(50));
         
         // Read current data
-        let users = await fileHandler.read('users') || [];
-        let votes = await fileHandler.read('votes') || [];
+        const users = await fileHandler.read('users') || [];
+        const votes = await fileHandler.read('votes') || [];
         
-        // Ensure arrays
-        users = Array.isArray(users) ? users : [];
-        votes = Array.isArray(votes) ? votes : [];
+        // Ensure we're working with arrays
+        const usersArray = Array.isArray(users) ? users : [];
+        const votesArray = Array.isArray(votes) ? votes : [];
         
-        console.log(`Before reset - Users: ${users.length}, Votes: ${votes.length}`);
+        console.log(`Before reset - Users: ${usersArray.length}, Votes: ${votesArray.length}`);
         
-        // Reset all users' voting status
-        const updatedUsers = users.map(user => {
-            if (user) {
+        // Reset all users' voting status - preserve all other user data
+        const updatedUsers = usersArray.map(user => {
+            if (user && typeof user === 'object') {
                 return {
                     ...user,
                     hasVoted: false,
@@ -868,19 +868,29 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
             return user;
         });
         
-        // Clear all votes (set to empty array)
+        // Clear all votes - set to empty array
         const updatedVotes = [];
         
         // Save to JSONBin
+        console.log('Saving updated users...');
         const usersSaved = await fileHandler.write('users', updatedUsers);
+        
+        console.log('Saving cleared votes...');
         const votesSaved = await fileHandler.write('votes', updatedVotes);
         
-        if (!usersSaved || !votesSaved) {
-            throw new Error('Failed to save reset data');
+        console.log('Users saved:', usersSaved);
+        console.log('Votes saved:', votesSaved);
+        
+        if (!usersSaved) {
+            throw new Error('Failed to save users - write operation returned false');
+        }
+        
+        if (!votesSaved) {
+            throw new Error('Failed to save votes - write operation returned false');
         }
         
         // Log activity
-        await logActivity(req.admin.email, 'Reset votes', `Reset all votes (cleared ${votes.length} votes, reset ${users.length} users)`);
+        await logActivity(req.admin.email, 'Reset votes', `Reset all votes (cleared ${votesArray.length} votes, reset ${usersArray.length} users)`);
         
         console.log(`After reset - Users: ${updatedUsers.length}, Votes: ${updatedVotes.length}`);
         console.log('VOTE RESET SUCCESSFUL');
@@ -891,7 +901,7 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
             message: 'All votes have been reset successfully',
             stats: {
                 usersReset: updatedUsers.length,
-                votesCleared: votes.length
+                votesCleared: votesArray.length
             }
         });
 
@@ -908,5 +918,4 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
         });
     }
 });
-
 module.exports = router;

@@ -139,6 +139,33 @@ app.get('/api/debug/jsonbin', async (req, res) => {
     }
 });
 
+// Add this temporary debug endpoint
+app.get('/api/debug/reset-test', async (req, res) => {
+    try {
+        const fileHandler = require('./utils/fileHandler');
+        
+        // Test reading
+        const users = await fileHandler.read('users');
+        const votes = await fileHandler.read('votes');
+        
+        // Test writing a small test
+        const testWrite = await fileHandler.write('votes', []);
+        
+        res.json({
+            success: true,
+            canRead: {
+                users: !!users,
+                votes: !!votes
+            },
+            canWrite: testWrite,
+            usersCount: users?.length || 0,
+            votesCount: votes?.length || 0
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/admin-login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
