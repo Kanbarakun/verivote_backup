@@ -206,47 +206,34 @@
             </div>
 
             <!-- Election Management Section -->
-            <div id="elections" class="content-section">
-                <div class="section-header">
-                    <h1>Election Management</h1>
-                </div>
+<div id="elections" class="content-section">
+    <div class="section-header">
+        <h1>Election Management</h1>
+    </div>
 
-                <div class="election-status-card">
-                    <h3>Current Election Status</h3>
-                    <div class="status-indicator" id="electionStatus">
-                        <span class="badge bg-secondary">INACTIVE</span>
-                    </div>
-                    
-                    <div class="election-timer" id="electionTimer">
-                        <!-- Timer will be displayed here -->
-                    </div>
-                    
-                    <div class="election-controls">
-                        <button class="btn-success" onclick="startElection()">
-                            <i class="fas fa-play"></i> Start Election
-                        </button>
-                        <button class="btn-danger" onclick="endElection()">
-                            <i class="fas fa-stop"></i> End Election
-                        </button>
-                    </div>
-                </div>
+    <!-- Current Election Status Card -->
+    <div class="election-status-card">
+        <h3>Current Election Status</h3>
+        <div class="status-indicator" id="electionStatus">
+            <span class="badge bg-secondary">INACTIVE</span>
+        </div>
+        
+        <div class="election-timer" id="electionTimer">
+            <!-- Timer will be displayed here -->
+        </div>
+        
+        <div class="election-controls">
+            <button class="btn-success" onclick="startElection()">
+                <i class="fas fa-play"></i> Start Election
+            </button>
+            <button class="btn-danger" onclick="endElection()">
+                <i class="fas fa-stop"></i> End Election
+            </button>
+        </div>
+    </div>
 
-                    <!-- ADD THIS: Reset Votes Section -->
-                    <div class="reset-section mt-4 pt-4" style="border-top: 1px solid rgba(255,255,255,0.2);">
-                        <h4 class="text-warning mb-3">
-                            <i class="fas fa-history me-2"></i>Reset Election Data
-                        </h4>
-                        <p class="text-muted small mb-3">
-                            This will delete ALL votes and reset ALL users' voting status. 
-                            Use this before starting a new election.
-                        </p>
-                        <button class="btn-warning" onclick="openResetModal()" style="background: #ffc107; border: none; color: #333;">
-                            <i class="fas fa-redo-alt me-2"></i> Reset All Votes
-                        </button>
-                    </div>
-                </div>
-
-                <div class="election-settings">
+                <!-- Election Settings Card -->
+                <div class="election-settings-card" style="margin-top: 30px;">
                     <h3>Election Settings</h3>
                     
                     <div class="settings-form">
@@ -255,7 +242,7 @@
                             <input type="text" id="electionTitle" class="form-control" value="Philippine General Election 2024">
                         </div>
                         
-                        <div class="form-row" style="display: flex; gap: 15px;">
+                        <div class="form-row" style="display: flex; gap: 15px; margin-top: 15px;">
                             <div class="form-group" style="flex: 1;">
                                 <label>Start Date</label>
                                 <input type="datetime-local" id="startDate" class="form-control">
@@ -267,7 +254,7 @@
                             </div>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group" style="margin-top: 15px;">
                             <label>Max Votes per Position</label>
                             <select id="maxVotes" class="form-control">
                                 <option value="1">1 vote per position</option>
@@ -276,10 +263,24 @@
                             </select>
                         </div>
                         
-                        <button class="btn-primary" onclick="saveElectionSettings()">
+                        <button class="btn-primary" onclick="saveElectionSettings()" style="margin-top: 20px;">
                             <i class="fas fa-save"></i> Save Settings
                         </button>
                     </div>
+                </div>
+
+                <!-- Reset Votes Section -->
+                <div class="reset-section" style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <h4 class="text-warning mb-3">
+                        <i class="fas fa-history me-2"></i>Reset Election Data
+                    </h4>
+                    <p class="text-muted small mb-3">
+                        This will delete ALL votes and reset ALL users' voting status. 
+                        Use this before starting a new election.
+                    </p>
+                    <button class="btn-warning" onclick="openResetModal()" style="background: #ffc107; border: none; color: #333; padding: 10px 25px; border-radius: 50px; font-weight: 600;">
+                        <i class="fas fa-redo-alt me-2"></i> Reset All Votes
+                    </button>
                 </div>
             </div>
 
