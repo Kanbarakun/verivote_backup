@@ -836,86 +836,53 @@ router.post('/settings', verifyAdmin, async (req, res) => {
     }
 });
 
-// Reset all votes
+// DIRECT RESET - NO FILEHANDLER
 router.post('/reset-votes', verifyAdmin, async (req, res) => {
     try {
-        console.log('='.repeat(50));
-        console.log('RESET VOTES ATTEMPT');
-        console.log('Admin:', req.admin.email);
-        console.log('='.repeat(50));
+        console.log('🔄 DIRECT RESET ATTEMPT');
         
-        // Read current data
-        const users = await fileHandler.read('users') || [];
-        const votes = await fileHandler.read('votes') || [];
+        const axios = require('axios');
+        const binId = process.env.BIN_ID_VOTES;
+        const apiKey = process.env.JSONBIN_API_KEY;
         
-        // Ensure we're working with arrays
-        const usersArray = Array.isArray(users) ? users : [];
-        const votesArray = Array.isArray(votes) ? votes : [];
+        if (!binId) throw new Error('Missing BIN_ID_VOTES');
+        if (!apiKey) throw new Error('Missing JSONBIN_API_KEY');
         
-        console.log(`Before reset - Users: ${usersArray.length}, Votes: ${votesArray.length}`);
+        console.log('Bin ID:', binId);
+        console.log('API Key exists:', !!apiKey);
         
-        // Reset all users' voting status - preserve all other user data
-        const updatedUsers = usersArray.map(user => {
-            if (user && typeof user === 'object') {
-                return {
-                    ...user,
-                    hasVoted: false,
-                    updatedAt: new Date().toISOString()
-                };
+        // DIRECT API CALL TO JSONBIN
+        const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, [], {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': apiKey
             }
-            return user;
         });
         
-        // FIX: Always send an empty array [] - NEVER send null or undefined
-        const updatedVotes = {}; // This is a valid JSON array
+        console.log('✅ JSONBin Response:', response.status);
         
-        console.log('Saving updated users...');
-        console.log('Users data structure:', JSON.stringify(updatedUsers).substring(0, 200) + '...');
-        const usersSaved = await fileHandler.write('users', updatedUsers);
-        console.log('Users saved:', usersSaved);
-        
-        console.log('Saving cleared votes...');
-        console.log('Votes data structure: [] (empty array)');
-        console.log('Votes data length:', JSON.stringify(updatedVotes).length, 'bytes');
-        
-        // IMPORTANT: Make sure we're sending a valid JSON array
-        const votesSaved = await fileHandler.write('votes', updatedVotes);
-        console.log('Votes saved:', votesSaved);
-        
-        if (!usersSaved) {
-            throw new Error('Failed to save users - write operation returned false');
-        }
-        
-        if (!votesSaved) {
-            throw new Error('Failed to save votes - write operation returned false');
-        }
-        
-        // Log activity
-        await logActivity(req.admin.email, 'Reset votes', `Reset all votes (cleared ${votesArray.length} votes, reset ${usersArray.length} users)`);
-        
-        console.log(`After reset - Users: ${updatedUsers.length}, Votes: ${updatedVotes.length}`);
-        console.log('VOTE RESET SUCCESSFUL');
-        console.log('='.repeat(50));
+        // Also reset users' hasVoted status
+        const users = await require('../utils/fileHandler').read('users') || [];
+        const updatedUsers = users.map(u => ({ ...u, hasVoted: false }));
+        await require('../utils/fileHandler').write('users', updatedUsers);
         
         res.json({ 
             success: true, 
-            message: 'All votes have been reset successfully',
-            stats: {
-                usersReset: updatedUsers.length,
-                votesCleared: votesArray.length
-            }
+            message: 'Reset successful',
+            status: response.status
         });
-
+        
     } catch (error) {
-        console.error('='.repeat(50));
-        console.error('VOTE RESET ERROR');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('='.repeat(50));
+        console.error('❌ Reset failed:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
         
         res.status(500).json({ 
             success: false, 
-            message: 'Failed to reset votes: ' + error.message 
+            message: error.message,
+            details: error.response?.data
         });
     }
 });
