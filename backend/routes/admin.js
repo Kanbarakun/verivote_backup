@@ -836,9 +836,7 @@ router.post('/settings', verifyAdmin, async (req, res) => {
     }
 });
 
-// ==================== VOTE RESET ====================
-
-// Reset all votes (clear votes and reset user voting status)
+// Reset all votes
 router.post('/reset-votes', verifyAdmin, async (req, res) => {
     try {
         console.log('='.repeat(50));
@@ -868,20 +866,20 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
             return user;
         });
         
-        // Clear all votes - set to empty array
-        const updatedVotes = [];
+        // FIX: Always send an empty array [] - NEVER send null or undefined
+        const updatedVotes = []; // This is a valid JSON array
         
-        console.log('Updated users sample:', updatedUsers[0] ? 'User preserved' : 'No users');
-        console.log('Updated votes count:', updatedVotes.length);
-        
-        // Save to JSONBin
         console.log('Saving updated users...');
+        console.log('Users data structure:', JSON.stringify(updatedUsers).substring(0, 200) + '...');
         const usersSaved = await fileHandler.write('users', updatedUsers);
+        console.log('Users saved:', usersSaved);
         
         console.log('Saving cleared votes...');
-        const votesSaved = await fileHandler.write('votes', updatedVotes);
+        console.log('Votes data structure: [] (empty array)');
+        console.log('Votes data length:', JSON.stringify(updatedVotes).length, 'bytes');
         
-        console.log('Users saved:', usersSaved);
+        // IMPORTANT: Make sure we're sending a valid JSON array
+        const votesSaved = await fileHandler.write('votes', updatedVotes);
         console.log('Votes saved:', votesSaved);
         
         if (!usersSaved) {

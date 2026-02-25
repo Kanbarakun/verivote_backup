@@ -50,50 +50,44 @@ const fileHandler = {
     },
 
     write: async (type, data) => {
-        const binId = BINS[type];
-        
-        if (!binId) {
-            console.error(`❌ Write Error: No bin ID for ${type}`);
-            return false;
-        }
-
-        try {
-            console.log(`📝 Writing to ${type} bin...`);
-            console.log(`Bin ID: ${binId}`);
-            console.log(`Data type: ${typeof data}`);
-            console.log(`Is Array: ${Array.isArray(data)}`);
-            console.log(`Data length: ${data ? data.length : 0}`);
-            
-            // IMPORTANT: For JSONBin v3 API, we need to send the data directly
-            // No need to wrap it, just send the raw data
-            const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, data, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY,
-                    'X-Bin-Versioning': 'false' // Disable versioning to simplify
-                }
-            });
-            
-            console.log(`✅ Write to ${type} successful:`, response.status);
-            return true;
-        } catch (err) {
-            console.error(`❌ Cloud Write Error (${type}):`, {
-                status: err.response?.status,
-                statusText: err.response?.statusText,
-                data: err.response?.data,
-                message: err.message,
-                binId: binId
-            });
-            
-            // Log more details about what we tried to send
-            if (err.response?.status === 400) {
-                console.error('Bad Request - The data format might be invalid');
-                console.error('Data being sent:', JSON.stringify(data).substring(0, 200) + '...');
-            }
-            
-            return false;
-        }
+    const binId = BINS[type];
+    
+    if (!binId) {
+        console.error(`❌ Write Error: No bin ID for ${type}`);
+        return false;
     }
+
+    try {
+        console.log(`📝 Writing to ${type} bin...`);
+        console.log(`Bin ID: ${binId}`);
+        
+        // IMPORTANT: Ensure data is never null or undefined
+        const dataToSend = data !== null && data !== undefined ? data : [];
+        
+        // Log what we're sending
+        console.log(`Data type: ${Array.isArray(dataToSend) ? 'Array' : typeof dataToSend}`);
+        console.log(`Data length: ${JSON.stringify(dataToSend).length} bytes`);
+        
+        const response = await axios.put(`https://api.jsonbin.io/v3/b/${binId}`, dataToSend, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': API_KEY
+            }
+        });
+        
+        console.log(`✅ Write to ${type} successful:`, response.status);
+        return true;
+    } catch (err) {
+        console.error(`❌ Cloud Write Error (${type}):`, {
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            message: err.message,
+            binId: binId,
+            responseData: err.response?.data
+        });
+        return false;
+    }
+}
 };
 
 module.exports = fileHandler;
