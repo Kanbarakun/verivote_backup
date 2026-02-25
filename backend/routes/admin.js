@@ -158,7 +158,7 @@ router.post('/candidates', verifyAdmin, async (req, res) => {
             id,
             name,
             position,
-            photo: photo || `imgs/${id}.jpg`,
+            photo: photo || `img/${id}.jpg`,
             bio: bio || `${name} - Candidate for ${position}`,
             status: status || 'active',
             createdAt: new Date().toISOString(),
