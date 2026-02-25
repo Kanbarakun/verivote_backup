@@ -867,7 +867,7 @@ router.post('/reset-votes', verifyAdmin, async (req, res) => {
             return user;
         });
         
-        // Clear all votes - send empty array (fileHandler will wrap it)
+        
         const updatedVotes = [];
         
         console.log('Saving updated users...');
