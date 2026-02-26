@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerBtn) {
         registerBtn.addEventListener('click', async () => {
             const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
+            // FIX: Convert email to lowercase before sending
+            const email = document.getElementById('reg-email').value.toLowerCase().trim();
             const password = document.getElementById('reg-password').value;
 
             // Basic Validation
@@ -41,7 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('btn-login');
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
+            // FIX: Convert email to lowercase before sending
+            const email = document.getElementById('login-email').value.toLowerCase().trim();
             const password = document.getElementById('login-password').value;
 
             if (!email || !password) {
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Save ALL user data to localStorage
                     localStorage.setItem('userEmail', result.email);
                     localStorage.setItem('userName', result.userName);
-                    localStorage.setItem('token', result.token); // THIS IS CRITICAL
+                    localStorage.setItem('token', result.token);
                     localStorage.setItem('hasVoted', result.hasVoted ? 'true' : 'false');
                     
                     console.log('Saved to localStorage:', { 

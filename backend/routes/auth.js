@@ -54,7 +54,10 @@ async function logActivity(actor, action, details) {
 // REGISTER - Create new user
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        let { name, email, password } = req.body;
+        
+        // FIX: Normalize email to lowercase
+        email = email.toLowerCase().trim();
         
         // Validate input
         if (!name || !email || !password) {
@@ -68,8 +71,8 @@ router.post('/register', async (req, res) => {
         let users = await fileHandler.read('users') || [];
         if (!Array.isArray(users)) users = [];
         
-        // Check if user already exists
-        if (users.find(u => u && u.email === email)) {
+        // FIX: Case-insensitive check for existing user
+        if (users.find(u => u && u.email && u.email.toLowerCase() === email)) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'User already exists' 
@@ -82,7 +85,7 @@ router.post('/register', async (req, res) => {
         // Create new user object
         const newUser = {
             name,
-            email,
+            email, // Store normalized lowercase email
             password: hashedPassword,
             hasVoted: false,
             createdAt: new Date().toISOString()
@@ -115,7 +118,10 @@ router.post('/register', async (req, res) => {
 // LOGIN - Authenticate user
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
+        
+        // FIX: Normalize email to lowercase
+        email = email.toLowerCase().trim();
         
         // Validate input
         if (!email || !password) {
@@ -129,8 +135,8 @@ router.post('/login', async (req, res) => {
         let users = await fileHandler.read('users') || [];
         if (!Array.isArray(users)) users = [];
         
-        // Find user by email
-        const user = users.find(u => u && u.email === email);
+        // FIX: Case-insensitive search for user
+        const user = users.find(u => u && u.email && u.email.toLowerCase() === email);
         
         if (!user) {
             return res.status(401).json({ 
